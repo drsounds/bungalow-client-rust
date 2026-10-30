@@ -8,10 +8,7 @@ pub struct SPBookmarkEventArgs {
 
 impl SPBookmarkEventArgs {
     pub fn new(uri: &str, title: &str) -> Self {
-        Self {
-            uri: uri.to_string(),
-            title: title.to_string(),
-        }
+        Self { uri: uri.to_string(), title: title.to_string() }
     }
     pub fn get_uri(&self) -> &str {
         &self.uri

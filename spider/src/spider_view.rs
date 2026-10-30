@@ -17,12 +17,7 @@ pub struct SpiderView {
 impl SpiderView {
     /// Creates a view that accepts URIs starting with `prefix`.
     pub fn new(prefix: &str) -> Self {
-        Self {
-            lua: Lua::new(),
-            elua_ctx: EluaContext::new(),
-            template: None,
-            prefix: prefix.to_string(),
-        }
+        Self { lua: Lua::new(), elua_ctx: EluaContext::new(), template: None, prefix: prefix.to_string() }
     }
 
     pub fn set_template(&mut self, path: &Path) {
@@ -62,11 +57,8 @@ impl SpiderView {
             .map_err(|e| e.to_string())?;
         globals.set("print", print).map_err(|e| e.to_string())?;
 
-        let chunk = elua_loadfile(&self.lua, &template, &mut self.elua_ctx)
-            .map_err(|e| format!("Load error: {e}"))?;
-        chunk
-            .call::<()>(())
-            .map_err(|e| format!("Runtime error: {e}\n{}", self.elua_ctx.output()))?;
+        let chunk = elua_loadfile(&self.lua, &template, &mut self.elua_ctx).map_err(|e| format!("Load error: {e}"))?;
+        chunk.call::<()>(()).map_err(|e| format!("Runtime error: {e}\n{}", self.elua_ctx.output()))?;
         let result = output.borrow().clone();
         Ok(result)
     }

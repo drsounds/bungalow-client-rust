@@ -21,11 +21,7 @@ pub struct SPEvent {
 
 impl SPEvent {
     pub fn new(type_: &str, args: Rc<dyn SPEventArgs>, sender: Option<SPObject>) -> Self {
-        Self {
-            type_: type_.to_string(),
-            args,
-            sender,
-        }
+        Self { type_: type_.to_string(), args, sender }
     }
 }
 

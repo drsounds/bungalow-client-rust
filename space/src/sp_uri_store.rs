@@ -99,14 +99,7 @@ pub struct SPUriAction {
 
 impl SPUriAction {
     pub fn new(type_: SPUriActionType, uri: &str) -> Self {
-        Self {
-            type_,
-            uri: uri.to_string(),
-            payload: Value::Null,
-            error: String::new(),
-            request_id: 0,
-            timestamp: 0,
-        }
+        Self { type_, uri: uri.to_string(), payload: Value::Null, error: String::new(), request_id: 0, timestamp: 0 }
     }
 
     pub fn with_payload(mut self, payload: Value) -> Self {
@@ -377,11 +370,7 @@ impl SPUriStore {
     /// Listen to changes of one URI, or of every URI when `uri` is empty.
     #[must_use]
     pub fn subscribe(&self, uri: &str, listener: Listener) -> Subscription {
-        let slot = Rc::new(Slot {
-            uri: uri.to_string(),
-            listener,
-            active: Cell::new(true),
-        });
+        let slot = Rc::new(Slot { uri: uri.to_string(), listener, active: Cell::new(true) });
         self.slots.borrow_mut().push(slot.clone());
         Subscription { slot: Some(slot) }
     }
@@ -458,10 +447,7 @@ impl SPUriStore {
         if directory.is_empty() {
             return String::new();
         }
-        PathBuf::from(directory.as_str())
-            .join(encode_file_name(uri))
-            .to_string_lossy()
-            .into_owned()
+        PathBuf::from(directory.as_str()).join(encode_file_name(uri)).to_string_lossy().into_owned()
     }
 
     fn hydrate(&self, uri: &str) {
@@ -559,19 +545,26 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let store = SPUriStore::new();
         store.set_persistence_directory(dir.path().to_str().unwrap());
-        store.register_resolver("bungalow:artist:", Rc::new(|uri: &str, resolve: ResolveCallback, _| {
-            resolve(json!({ "uri": uri, "name": "Test" }));
-        }));
+        store.register_resolver(
+            "bungalow:artist:",
+            Rc::new(|uri: &str, resolve: ResolveCallback, _| {
+                resolve(json!({ "uri": uri, "name": "Test" }));
+            }),
+        );
         // resolve() dispatches through the thread's store, so use it here too.
         SPUriStore::with(|global| {
             global.reset();
             global.set_persistence_directory(dir.path().to_str().unwrap());
-            global.register_resolver("bungalow:artist:", Rc::new(|uri: &str, resolve: ResolveCallback, _| {
-                resolve(json!({ "uri": uri, "name": "Test" }));
-            }));
+            global.register_resolver(
+                "bungalow:artist:",
+                Rc::new(|uri: &str, resolve: ResolveCallback, _| {
+                    resolve(json!({ "uri": uri, "name": "Test" }));
+                }),
+            );
             let seen = Rc::new(Cell::new(0));
             let counter = seen.clone();
-            let _subscription = global.subscribe("bungalow:artist:1", Rc::new(move |_, _| counter.set(counter.get() + 1)));
+            let _subscription =
+                global.subscribe("bungalow:artist:1", Rc::new(move |_, _| counter.set(counter.get() + 1)));
             let entry = global.resolve_uri("bungalow:artist:1", -1);
             assert_eq!(entry.status, SPUriStatus::Fresh);
             assert_eq!(entry.data["name"], "Test");

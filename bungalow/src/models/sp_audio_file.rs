@@ -26,7 +26,15 @@ pub struct SPAudioFile {
 const COLUMNS: &str = "SELECT id, file_id, name, version, artists, album, duration, cover_art FROM audio_files";
 
 impl SPAudioFile {
-    pub fn new(file_id: i64, name: &str, version: &str, artists: &str, album: &str, duration: i64, cover_art: &str) -> Self {
+    pub fn new(
+        file_id: i64,
+        name: &str,
+        version: &str,
+        artists: &str,
+        album: &str,
+        duration: i64,
+        cover_art: &str,
+    ) -> Self {
         Self {
             id: 0,
             file_id,

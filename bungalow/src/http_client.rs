@@ -38,10 +38,7 @@ pub fn http_request(
     result.status = response.status() as i32;
     result.content_type = response.header("Content-Type").unwrap_or_default().to_string();
     result.content_disposition = response.header("Content-Disposition").unwrap_or_default().to_string();
-    result.content_length = response
-        .header("Content-Length")
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(-1);
+    result.content_length = response.header("Content-Length").and_then(|v| v.parse().ok()).unwrap_or(-1);
     if let Some(on_headers) = on_headers {
         on_headers(&result);
     }

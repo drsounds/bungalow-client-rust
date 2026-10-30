@@ -129,6 +129,12 @@ pub fn set_backend(backend: Option<Rc<dyn SPEmbeddedBrowserBackend>>) {
     BACKEND.with(|b| *b.borrow_mut() = backend);
 }
 
+/// True when a UI backend with embedded browsers is registered (the C++
+/// `BUNGALOW_CEF` build).
+pub fn has_backend() -> bool {
+    BACKEND.with(|b| b.borrow().is_some())
+}
+
 /// `createEmbeddedAppBrowser`: None if no embedded browser is available.
 pub fn create_embedded_app_browser(
     bundle: &SPAppBundle,

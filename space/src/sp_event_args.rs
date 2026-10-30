@@ -68,11 +68,7 @@ pub struct SPNodeTreeEventArgs {
 
 impl SPNodeTreeEventArgs {
     pub fn new(node: ElementRef, parent: ElementRef, action: &str) -> Self {
-        Self {
-            node,
-            parent,
-            action: action.to_string(),
-        }
+        Self { node, parent, action: action.to_string() }
     }
     pub fn get_node(&self) -> ElementRef {
         self.node.clone()

@@ -13,10 +13,6 @@ pub struct SPSubscription {
 
 impl SPSubscription {
     pub fn new(space: Weak<Space>, uri: &str) -> Self {
-        Self {
-            observable: SPObservable::new(),
-            uri: uri.to_string(),
-            space,
-        }
+        Self { observable: SPObservable::new(), uri: uri.to_string(), space }
     }
 }

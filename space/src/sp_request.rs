@@ -63,8 +63,7 @@ impl SPRequest {
         headers: &BTreeMap<String, String>,
         data: Option<&dyn Any>,
     ) -> Option<SPResponse> {
-        self.get_matching_handler_for_uri(uri)?
-            .process_request(method, uri, headers, data)
+        self.get_matching_handler_for_uri(uri)?.process_request(method, uri, headers, data)
     }
 }
 

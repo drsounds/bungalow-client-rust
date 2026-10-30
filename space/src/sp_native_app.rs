@@ -50,8 +50,25 @@ const HOOK_INTERVAL: u32 = 1000;
 /// Globals of the base library that cannot reach outside the sandbox
 /// (no load, loadfile, dofile or collectgarbage).
 const BASE_FUNCTIONS: [&str; 19] = [
-    "assert", "error", "getmetatable", "ipairs", "next", "pairs", "pcall", "print", "rawequal", "rawget", "rawlen",
-    "rawset", "select", "setmetatable", "tonumber", "tostring", "type", "xpcall", "_VERSION",
+    "assert",
+    "error",
+    "getmetatable",
+    "ipairs",
+    "next",
+    "pairs",
+    "pcall",
+    "print",
+    "rawequal",
+    "rawget",
+    "rawlen",
+    "rawset",
+    "select",
+    "setmetatable",
+    "tonumber",
+    "tostring",
+    "type",
+    "xpcall",
+    "_VERSION",
 ];
 const SAFE_LIBRARIES: [&str; 5] = ["coroutine", "math", "string", "table", "utf8"];
 /// The parts of os available without the "os" permission.
@@ -92,10 +109,7 @@ pub struct SPNativeApp {
 
 /// A bundle file's path for messages and Lua chunk names.
 fn relative_name(root: &Path, file: &Path) -> String {
-    file.strip_prefix(root)
-        .unwrap_or(file)
-        .to_string_lossy()
-        .replace('\\', "/")
+    file.strip_prefix(root).unwrap_or(file).to_string_lossy().replace('\\', "/")
 }
 
 /// [`resolve_inside`], adding `default_extension` when relative has none
@@ -122,11 +136,7 @@ fn new_environment(lua: &Lua, sandbox: &Table) -> mlua::Result<Table> {
 fn load_file(lua: &Lua, root: &Path, file: &Path, env: Table) -> mlua::Result<Function> {
     let name = relative_name(root, file);
     let source = fs::read(file).map_err(|_| mlua::Error::runtime(format!("cannot read {name}")))?;
-    lua.load(source)
-        .set_name(format!("@{name}"))
-        .set_mode(ChunkMode::Text)
-        .set_environment(env)
-        .into_function()
+    lua.load(source).set_name(format!("@{name}")).set_mode(ChunkMode::Text).set_environment(env).into_function()
 }
 
 /// Converts a controller result to JSON. Tables with exactly the keys 1..n
@@ -166,11 +176,7 @@ fn to_json(value: &LuaValue, depth: usize) -> Result<Value, String> {
     if sequence_keys == 0 || sequence_keys as usize != object.len() || max_key != sequence_keys {
         return Ok(Value::Object(object));
     }
-    Ok(Value::Array(
-        (1..=max_key)
-            .map(|i| object.remove(&i.to_string()).unwrap_or(Value::Null))
-            .collect(),
-    ))
+    Ok(Value::Array((1..=max_key).map(|i| object.remove(&i.to_string()).unwrap_or(Value::Null)).collect()))
 }
 
 impl SPNativeApp {
@@ -253,21 +259,15 @@ impl SPNativeApp {
             if pattern.is_empty() || view.is_empty() || controller.is_empty() {
                 return Err(format!("{name}: every route needs a path, view and controller"));
             }
-            let (Some(view), Some(controller)) = (
-                resolve_file(&self.root, &base, &view, ".xml"),
-                resolve_file(&self.root, &base, &controller, ".lua"),
-            ) else {
+            let (Some(view), Some(controller)) =
+                (resolve_file(&self.root, &base, &view, ".xml"), resolve_file(&self.root, &base, &controller, ".lua"))
+            else {
                 return Err(format!("{name}: route {pattern} refers to a file outside the app"));
             };
             // The whole URI must match, like std::regex_match.
             let path = Regex::new(&format!("^(?:{pattern})$"))
                 .map_err(|e| format!("{name}: invalid route path {pattern}: {e}"))?;
-            self.routes.push(Route {
-                path,
-                base: base.clone(),
-                view,
-                controller,
-            });
+            self.routes.push(Route { path, base: base.clone(), view, controller });
         }
         Ok(())
     }
@@ -370,9 +370,7 @@ impl SPNativeApp {
     }
 
     fn is_result(&self, table: &Table) -> bool {
-        table
-            .metatable()
-            .is_some_and(|meta| meta.to_pointer() == self.result_meta.to_pointer())
+        table.metatable().is_some_and(|meta| meta.to_pointer() == self.result_meta.to_pointer())
     }
 
     fn request_table(&self, route: &Route, uri: &str, method: &str, action: &str, data: &Value) -> mlua::Result<Table> {
@@ -415,12 +413,7 @@ impl SPNativeApp {
         let mut model = Value::Object(Map::new());
         self.instructions.set(0);
         let env = self.controller(&route.controller).map_err(lua_error)?;
-        let function_name = route
-            .controller
-            .file_stem()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .into_owned();
+        let function_name = route.controller.file_stem().unwrap_or_default().to_string_lossy().into_owned();
         let Ok(function) = env.get::<Function>(function_name.as_str()) else {
             return Err(format!(
                 "{} does not define a function {function_name}()",
@@ -434,10 +427,7 @@ impl SPNativeApp {
             if self.is_result(table) {
                 let kind: String = table.get("kind").unwrap_or_default();
                 if kind == "redirect" {
-                    return Ok(Response {
-                        xul: String::new(),
-                        redirect: table.get("uri").unwrap_or_default(),
-                    });
+                    return Ok(Response { xul: String::new(), redirect: table.get("uri").unwrap_or_default() });
                 }
                 let view: String = table.get("view").unwrap_or_default();
                 view_path = resolve_file(&self.root, &route.base, &view, ".xml")
@@ -470,11 +460,7 @@ mod tests {
             fs::create_dir_all(path.parent().unwrap()).unwrap();
             fs::write(path, content).unwrap();
         }
-        let bundle = SPAppBundle {
-            path: dir.path().to_string_lossy().into_owned(),
-            manifest,
-            ..Default::default()
-        };
+        let bundle = SPAppBundle { path: dir.path().to_string_lossy().into_owned(), manifest, ..Default::default() };
         (dir, bundle)
     }
 
@@ -509,7 +495,10 @@ mod tests {
     fn sandbox_blocks_io_and_runaway_loops() {
         let (_dir, bundle) = bundle(
             &[
-                ("routes.json", r#"{"routes": [{"path": "a:io", "view": "v", "controller": "io"}, {"path": "a:loop", "view": "v", "controller": "loop"}, {"path": "a:mod", "view": "v", "controller": "mod"}]}"#),
+                (
+                    "routes.json",
+                    r#"{"routes": [{"path": "a:io", "view": "v", "controller": "io"}, {"path": "a:loop", "view": "v", "controller": "loop"}, {"path": "a:mod", "view": "v", "controller": "mod"}]}"#,
+                ),
                 ("io.lua", "function io(request) return { t = type(_G.io), os = type(os.execute) } end"),
                 ("loop.lua", "function loop() while true do end end"),
                 ("mod.lua", "local m = require('lib.util')\nfunction mod() return { v = m.value } end"),

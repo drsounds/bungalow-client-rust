@@ -7,7 +7,6 @@ use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
 use space::sp_tab_bar_view_element::SPTabBarViewElement;
 use space::sp_view_element::{SPViewClass, SPViewElement};
 
-
 #[derive(Default)]
 pub struct ArtistView {
     pub tab_bar_view: SPTabBarViewElement,

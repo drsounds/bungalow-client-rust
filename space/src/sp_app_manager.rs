@@ -13,7 +13,9 @@ use std::rc::Rc;
 
 use serde_json::Value;
 
-use crate::sp_app_bundle::{lexically_normal, localized_field, resolve_inside, string_field, SPAppBundle, SPAppExtension};
+use crate::sp_app_bundle::{
+    lexically_normal, localized_field, resolve_inside, string_field, SPAppBundle, SPAppExtension,
+};
 use crate::sp_skin::SPSkin;
 use crate::sp_xml_skin::SPXmlSkin;
 
@@ -47,13 +49,7 @@ fn read_json(file: &Path) -> Option<Value> {
 
 fn subdirectories(dir: &Path) -> Vec<PathBuf> {
     let mut result: Vec<PathBuf> = fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .flatten()
-                .map(|e| e.path())
-                .filter(|p| p.is_dir())
-                .collect()
-        })
+        .map(|entries| entries.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect())
         .unwrap_or_default();
     result.sort();
     result
@@ -141,10 +137,7 @@ impl SPAppManager {
                         ext_type = type_.to_string();
                     }
                     if ext_type != type_ {
-                        log::warn!(
-                            "Skipping {}: BundleType {ext_type} does not belong in {folder}",
-                            ext_dir.display()
-                        );
+                        log::warn!("Skipping {}: BundleType {ext_type} does not belong in {folder}", ext_dir.display());
                         continue;
                     }
                     let mut ext_identifier = string_field(&ext_manifest, "BundleIdentifier");
@@ -186,11 +179,7 @@ impl SPAppManager {
 
     /// All extensions of the given type across every bundle.
     pub fn get_extensions(&self, type_: &str) -> Vec<&SPAppExtension> {
-        self.bundles
-            .iter()
-            .flat_map(|b| b.extensions.iter())
-            .filter(|e| e.type_ == type_)
-            .collect()
+        self.bundles.iter().flat_map(|b| b.extensions.iter()).filter(|e| e.type_ == type_).collect()
     }
 
     pub fn find_extension(&self, type_: &str, identifier: &str) -> Option<&SPAppExtension> {
@@ -216,13 +205,18 @@ impl SPAppManager {
     /// Creates the skin for a skin type. Accepts a skin extension
     /// identifier ("modern.skin") or its short form ("modern"). Returns
     /// None if no such skin bundle is installed or it fails to load.
-    pub fn create_skin(&self, skin_type: &str) -> Option<Rc<dyn SPSkin>> {
-        let ext = self
-            .find_extension("Skin", skin_type)
-            .or_else(|| self.find_extension("Skin", &format!("{skin_type}.skin")))?;
+    ///
+    /// Uses the application-wide manager; it is not borrowed while the skin
+    /// loads, because skin resources resolve through it too.
+    pub fn create_skin(skin_type: &str) -> Option<Rc<dyn SPSkin>> {
+        let ext_path = Self::with(|m| {
+            m.find_extension("Skin", skin_type)
+                .or_else(|| m.find_extension("Skin", &format!("{skin_type}.skin")))
+                .map(|ext| ext.path.clone())
+        })?;
         let skin = SPXmlSkin::new();
-        let file = Path::new(&ext.path).join("skin.xml");
-        if !skin.load(&file.to_string_lossy(), &ext.path) {
+        let file = Path::new(&ext_path).join("skin.xml");
+        if !skin.load(&file.to_string_lossy(), &ext_path) {
             return None;
         }
         Some(Rc::new(skin))
@@ -238,7 +232,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let app = dir.path().join("Apps/hello");
         fs::create_dir_all(app.join("skins/dark")).unwrap();
-        fs::write(app.join("manifest.json"), r#"{"BundleIdentifier":"hello","AppName":{"en":"Hello","sv":"Hej"}}"#).unwrap();
+        fs::write(app.join("manifest.json"), r#"{"BundleIdentifier":"hello","AppName":{"en":"Hello","sv":"Hej"}}"#)
+            .unwrap();
         fs::write(app.join("skins/dark/manifest.json"), r#"{"SkinName":"Dark"}"#).unwrap();
         fs::write(app.join("index.html"), "").unwrap();
 

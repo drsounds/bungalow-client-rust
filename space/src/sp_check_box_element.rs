@@ -83,9 +83,8 @@ impl SPElementClass for SPCheckBoxElement {
         let font = SPFontStyle::new(&font_family, font_size, font_size / 2, false, false);
         let text_size = c.measure_string(&text, &font);
         let text_x = x + box_size + LABEL_GAP;
-        let color = skin
-            .and_then(|skin| skin.get_text_color(&this, state))
-            .unwrap_or_else(|| self.el.get_foreground_color());
+        let color =
+            skin.and_then(|skin| skin.get_text_color(&this, state)).unwrap_or_else(|| self.el.get_foreground_color());
         c.draw_string(
             &text,
             &font,

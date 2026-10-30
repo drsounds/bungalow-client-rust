@@ -48,8 +48,7 @@ impl SPElementClass for SPImageElement {
     fn paint(&self, x: i32, y: i32, g: &dyn SPGraphicsContext) {
         let abs_x = x + self.el.get_x();
         let abs_y = y + self.el.get_y();
-        self.el
-            .set_absolute_bounds(SPRectangle::new(abs_x, abs_y, self.el.get_width(), self.el.get_height()));
+        self.el.set_absolute_bounds(SPRectangle::new(abs_x, abs_y, self.el.get_width(), self.el.get_height()));
         if let Some(image) = self.image.borrow().as_ref() {
             g.draw_image(image, abs_x, abs_y, self.el.get_width(), self.el.get_height());
         }

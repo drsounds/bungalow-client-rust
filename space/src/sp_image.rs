@@ -72,7 +72,8 @@ impl SPImage {
 
     /// Loads a PNG file, normalising every PNG flavour to 8-bit RGBA.
     pub fn from_file(file_name: &str) -> Result<Self, String> {
-        let file = File::open(file_name).map_err(|e| format!("[read_png_file] File {file_name} could not be opened for reading: {e}"))?;
+        let file = File::open(file_name)
+            .map_err(|e| format!("[read_png_file] File {file_name} could not be opened for reading: {e}"))?;
         Self::from_png_reader(file).map_err(|e| format!("{file_name}: {e}"))
     }
 
@@ -104,7 +105,17 @@ impl SPImage {
 
     /// Copies the width x height region at (x, y) into a new image.
     #[allow(clippy::too_many_arguments)]
-    pub fn slice_image(&self, x: u32, y: u32, width: u32, height: u32, left: i32, top: i32, bottom: i32, right: i32) -> SPImage {
+    pub fn slice_image(
+        &self,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+        left: i32,
+        top: i32,
+        bottom: i32,
+        right: i32,
+    ) -> SPImage {
         let x = x.min(self.width);
         let y = y.min(self.height);
         let width = width.min(self.width - x);

@@ -17,10 +17,7 @@ pub struct SPObserver {
 
 impl SPObserver {
     pub fn new(event: &str, callback: SPCallback) -> Self {
-        Self {
-            event: event.to_string(),
-            callback,
-        }
+        Self { event: event.to_string(), callback }
     }
     pub fn get_event(&self) -> &str {
         &self.event

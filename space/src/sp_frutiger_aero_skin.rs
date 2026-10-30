@@ -200,7 +200,9 @@ impl SPSkin for SPFrutigerAeroSkin {
                     btn_bg = btn_bg.lighten(0.08);
                 }
                 match self.button_style.get() {
-                    SPButtonStyle::Flat => g.fill_rounded_rectangle(b.x, b.y, b.width, b.height, R, with_alpha(btn_bg, 215)),
+                    SPButtonStyle::Flat => {
+                        g.fill_rounded_rectangle(b.x, b.y, b.width, b.height, R, with_alpha(btn_bg, 215))
+                    }
                     SPButtonStyle::Gradient => {
                         let grad = SPGradient::new(btn_bg.lighten(0.12), btn_bg.lighten(-0.10), 0);
                         g.fill_rounded_linear_gradient_rectangle(b.x, b.y, b.width, b.height, R, 0, &grad);
@@ -209,7 +211,15 @@ impl SPSkin for SPFrutigerAeroSkin {
                         // Chromatic vertical gradient — accent hue shifts toward +60°
                         let (h, s, l) = btn_bg.to_hsl();
                         let sec = SPColor::from_hsl(h + 60.0, s * 0.85, l * 0.85, btn_bg.get_a());
-                        g.fill_rounded_linear_gradient_rectangle(b.x, b.y, b.width, b.height, R, 0, &SPGradient::new(btn_bg, sec, 0));
+                        g.fill_rounded_linear_gradient_rectangle(
+                            b.x,
+                            b.y,
+                            b.width,
+                            b.height,
+                            R,
+                            0,
+                            &SPGradient::new(btn_bg, sec, 0),
+                        );
                     }
                     SPButtonStyle::Aqua => {
                         // macOS X Aqua gel: vivid base, wide upper highlight, thin bottom shine
@@ -219,7 +229,15 @@ impl SPSkin for SPFrutigerAeroSkin {
                         g.fill_rounded_linear_gradient_rectangle(b.x + 3, b.y + 2, b.width - 6, top_h, R, 0, &hi);
                         let bot_h = (b.height / 7).max(3);
                         let bot = SPGradient::new(SPColor::new(255, 255, 255, 0), SPColor::new(255, 255, 255, 45), 0);
-                        g.fill_rounded_linear_gradient_rectangle(b.x + 2, b.y + b.height - bot_h - 2, b.width - 4, bot_h, 3, 0, &bot);
+                        g.fill_rounded_linear_gradient_rectangle(
+                            b.x + 2,
+                            b.y + b.height - bot_h - 2,
+                            b.width - 4,
+                            bot_h,
+                            3,
+                            0,
+                            &bot,
+                        );
                     }
                 }
                 // Gloss sheen — independent overlay, active with any button style
@@ -247,7 +265,17 @@ impl SPSkin for SPFrutigerAeroSkin {
         }
     }
 
-    fn draw_table_row(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, _i: i32, x: i32, y: i32, width: i32, height: i32, row: i32) {
+    fn draw_table_row(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        _i: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        row: i32,
+    ) {
         let scheme = table.el.get_color_scheme();
         let base = apply_tint_to_base(self.base.bg(scheme), table.el.get_tint_color());
         if table.is_row_selected(row) {
@@ -267,17 +295,36 @@ impl SPSkin for SPFrutigerAeroSkin {
         }
     }
 
-    fn draw_table_header(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_table_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let scheme = table.el.get_color_scheme();
         let base = apply_tint_to_base(self.base.bg(scheme), table.el.get_tint_color());
-        g.draw_linear_gradient(&SPRectangle::new(x, y, width, height), &SPGradient::new(base.lighten(0.12), base.lighten(-0.06), 0));
+        g.draw_linear_gradient(
+            &SPRectangle::new(x, y, width, height),
+            &SPGradient::new(base.lighten(0.12), base.lighten(-0.06), 0),
+        );
         if self.glossy.get() {
             draw_aero_sheen(g, x, y, width, height, 0);
         }
         g.draw_line(x, y + height - 1, x + width, y + height - 1, sep_color(scheme));
     }
 
-    fn draw_tab_bar(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let base = apply_tint_to_base(self.base.bg(tab_bar.el.get_color_scheme()), tab_bar.el.get_tint_color());
         g.fill_rectangle(x, y, width, height, with_alpha(base, 220));
         if self.glossy.get() {
@@ -285,7 +332,18 @@ impl SPSkin for SPFrutigerAeroSkin {
         }
     }
 
-    fn draw_tab_bar_tab(&self, g: &dyn SPGraphicsContext, _tab_bar: &SPTabBarElement, _tab: &SPTab, _index: i32, active: bool, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar_tab(
+        &self,
+        g: &dyn SPGraphicsContext,
+        _tab_bar: &SPTabBarElement,
+        _tab: &SPTab,
+        _index: i32,
+        active: bool,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         if !active {
             return;
         }
@@ -297,7 +355,17 @@ impl SPSkin for SPFrutigerAeroSkin {
         }
     }
 
-    fn draw_tree_item(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, item: &SPTreeItem, item_height: i32, x: i32, y: i32, _width: i32, _height: i32) {
+    fn draw_tree_item(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        item: &SPTreeItem,
+        item_height: i32,
+        x: i32,
+        y: i32,
+        _width: i32,
+        _height: i32,
+    ) {
         if !(item.is_selected() || item.is_highlighted()) {
             return;
         }
@@ -309,7 +377,16 @@ impl SPSkin for SPFrutigerAeroSkin {
         }
     }
 
-    fn draw_section_header(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, title: &str, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_section_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        title: &str,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let label = with_alpha(self.base.text_color(tree_view.el.get_color_scheme()), 160);
         let fs = tree_view.el.get_font_style();
         let style = SPFontStyle::new(&fs.get_family(), fs.get_height() - 2, fs.get_weight(), false, false);

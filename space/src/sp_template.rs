@@ -239,7 +239,8 @@ mod tests {
 
     #[test]
     fn model_globals() {
-        let xul = SPTemplate::render("${name} ${uri}", "GET", "x:y", "", &json!({}), &json!({ "name": "N" }), true).unwrap();
+        let xul =
+            SPTemplate::render("${name} ${uri}", "GET", "x:y", "", &json!({}), &json!({ "name": "N" }), true).unwrap();
         assert_eq!(xul, "N x:y");
     }
 

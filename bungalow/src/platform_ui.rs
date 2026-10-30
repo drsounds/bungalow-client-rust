@@ -10,17 +10,22 @@ use std::rc::Rc;
 use rusqlite::{params, Connection, OptionalExtension};
 
 pub type MenuItems = Vec<(i32, String)>;
+/// Receives the chosen menu item id, or -1 if the menu was dismissed.
+pub type MenuCallback = Box<dyn FnOnce(i32)>;
 
 /// Dialog implementations supplied by the client.
 pub trait PlatformHooks {
-    /// Shows a popup menu at the cursor and returns the chosen id, or -1.
-    fn show_popup_menu(&self, items: &MenuItems) -> i32;
+    /// Shows a popup menu at the cursor. egui cannot run a nested modal
+    /// loop like `TrackPopupMenu`, so the choice arrives through `on_select`.
+    fn show_popup_menu(&self, items: &MenuItems, on_select: MenuCallback);
     /// Shows a folder picker. Returns the chosen path, or "" if cancelled.
     fn show_folder_dialog(&self, title: &str, initial_path: &str) -> String;
     /// Shows a file picker for audio files. Returns the path, or "" if cancelled.
     fn show_open_audio_file_dialog(&self, title: &str) -> String;
     /// Shows a message box.
     fn show_message(&self, title: &str, message: &str);
+    /// Shows a warning with Yes/No buttons (No is the default). Returns true for Yes.
+    fn ask_yes_no(&self, title: &str, message: &str) -> bool;
 }
 
 thread_local! {
@@ -35,9 +40,13 @@ fn hooks() -> Option<Rc<dyn PlatformHooks>> {
     HOOKS.with(|h| h.borrow().clone())
 }
 
-/// Shows a popup menu at the cursor and returns the chosen item id, or -1 if dismissed.
-pub fn show_popup_menu(items: &MenuItems) -> i32 {
-    hooks().map(|h| h.show_popup_menu(items)).unwrap_or(-1)
+/// Shows a popup menu at the cursor; `on_select` gets the chosen item id,
+/// or -1 if the menu was dismissed.
+pub fn show_popup_menu(items: &MenuItems, on_select: MenuCallback) {
+    match hooks() {
+        Some(h) => h.show_popup_menu(items, on_select),
+        None => on_select(-1),
+    }
 }
 
 /// Shows the add (`track_id` == 0) or edit track dialog. Returns true if
@@ -59,10 +68,7 @@ pub fn show_add_track_dialog(db: Option<&Connection>, track_id: i32) -> bool {
 
 /// Adds `path` to files, audio_files and playables.
 pub fn import_audio_file(db: &Connection, path: &str) -> bool {
-    let name = Path::new(path)
-        .file_stem()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_default();
+    let name = Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     let _ = db.execute("INSERT OR IGNORE INTO files(path) VALUES(?)", params![path]);
     let file_id: i64 = db
         .query_row("SELECT id FROM files WHERE path=?", params![path], |r| r.get(0))
@@ -78,11 +84,21 @@ pub fn import_audio_file(db: &Connection, path: &str) -> bool {
     true
 }
 
+/// Shows a message box.
+pub fn show_message(title: &str, message: &str) {
+    if let Some(h) = hooks() {
+        h.show_message(title, message);
+    }
+}
+
+/// Asks a Yes/No question; a missing dialog counts as No.
+pub fn ask_yes_no(title: &str, message: &str) -> bool {
+    hooks().is_some_and(|h| h.ask_yes_no(title, message))
+}
+
 /// Shows a folder picker. Returns the chosen path, or "" if cancelled.
 pub fn show_folder_dialog(title: &str, initial_path: &str) -> String {
-    hooks()
-        .map(|h| h.show_folder_dialog(title, initial_path).replace('\\', "/"))
-        .unwrap_or_default()
+    hooks().map(|h| h.show_folder_dialog(title, initial_path).replace('\\', "/")).unwrap_or_default()
 }
 
 fn path_string(path: Option<std::path::PathBuf>) -> String {

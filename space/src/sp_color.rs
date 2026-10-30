@@ -36,12 +36,7 @@ impl SPColor {
                 (color & 0xff) as i16,
             )
         } else {
-            Self::new(
-                ((color >> 16) & 0xff) as i16,
-                ((color >> 8) & 0xff) as i16,
-                (color & 0xff) as i16,
-                255,
-            )
+            Self::new(((color >> 16) & 0xff) as i16, ((color >> 8) & 0xff) as i16, (color & 0xff) as i16, 255)
         }
     }
 
@@ -101,12 +96,7 @@ impl SPColor {
     pub fn tint(&self, tint: &SPColor) -> Self {
         let ta = tint.a as f64 / 255.0;
         let channel = |v: i16, t: i16| (v as f64 + ((255 - v) as f64 * (t as f64 / 255.0)) * ta) as i16;
-        Self::new(
-            channel(self.r, tint.r),
-            channel(self.g, tint.g),
-            channel(self.b, tint.b),
-            channel(self.a, tint.a),
-        )
+        Self::new(channel(self.r, tint.r), channel(self.g, tint.g), channel(self.b, tint.b), channel(self.a, tint.a))
     }
 
     pub fn mix(&self, other: &SPColor, t: f32) -> Self {

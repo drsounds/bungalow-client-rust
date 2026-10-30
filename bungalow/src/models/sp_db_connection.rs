@@ -31,13 +31,16 @@ impl<'a> SPDBConnection<'a> {
 
     /// Executes a one-shot batch of statements.
     pub fn exec(&self, sql: &str) -> Result<(), String> {
-        self.handle()
-            .execute_batch(sql)
-            .map_err(|e| format!("SPDBConnection::exec failed: {e}"))
+        self.handle().execute_batch(sql).map_err(|e| format!("SPDBConnection::exec failed: {e}"))
     }
 
     /// Runs a query and maps every row.
-    pub fn query<T, P: Params>(&self, sql: &str, params: P, from_row: impl FnMut(&Row) -> rusqlite::Result<T>) -> Vec<T> {
+    pub fn query<T, P: Params>(
+        &self,
+        sql: &str,
+        params: P,
+        from_row: impl FnMut(&Row) -> rusqlite::Result<T>,
+    ) -> Vec<T> {
         let mut stmt = match self.handle().prepare(sql) {
             Ok(stmt) => stmt,
             Err(e) => {
@@ -45,13 +48,16 @@ impl<'a> SPDBConnection<'a> {
                 return Vec::new();
             }
         };
-        stmt.query_map(params, from_row)
-            .map(|rows| rows.flatten().collect())
-            .unwrap_or_default()
+        stmt.query_map(params, from_row).map(|rows| rows.flatten().collect()).unwrap_or_default()
     }
 
     /// Runs a query and maps the first row.
-    pub fn query_one<T, P: Params>(&self, sql: &str, params: P, from_row: impl FnMut(&Row) -> rusqlite::Result<T>) -> Option<T> {
+    pub fn query_one<T, P: Params>(
+        &self,
+        sql: &str,
+        params: P,
+        from_row: impl FnMut(&Row) -> rusqlite::Result<T>,
+    ) -> Option<T> {
         self.query(sql, params, from_row).into_iter().next()
     }
 

@@ -18,11 +18,7 @@ fn dispatcher() -> &'static Dispatcher {
     static DISPATCHER: OnceLock<Dispatcher> = OnceLock::new();
     DISPATCHER.get_or_init(|| {
         let (sender, receiver) = channel();
-        Dispatcher {
-            sender: Mutex::new(sender),
-            receiver: Mutex::new(receiver),
-            waker: Mutex::new(None),
-        }
+        Dispatcher { sender: Mutex::new(sender), receiver: Mutex::new(receiver), waker: Mutex::new(None) }
     })
 }
 

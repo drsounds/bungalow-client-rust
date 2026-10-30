@@ -11,13 +11,7 @@ pub struct SPFontStyle {
 
 impl SPFontStyle {
     pub fn new(family: &str, height: i32, weight: i32, italic: bool, underline: bool) -> Self {
-        Self {
-            height,
-            weight,
-            italic,
-            underline,
-            family: family.to_string(),
-        }
+        Self { height, weight, italic, underline, family: family.to_string() }
     }
     pub fn get_height(&self) -> i32 {
         self.height

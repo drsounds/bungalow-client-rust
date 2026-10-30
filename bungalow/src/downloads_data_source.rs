@@ -76,11 +76,13 @@ impl SPTableDataSource for DownloadsDataSource {
                         return sub.to_string();
                     }
                 }
-                let ext = Path::new(&item.filename)
-                    .extension()
-                    .map(|e| e.to_string_lossy().into_owned())
-                    .unwrap_or_default();
-                if ext.is_empty() { "File".into() } else { ext }
+                let ext =
+                    Path::new(&item.filename).extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
+                if ext.is_empty() {
+                    "File".into()
+                } else {
+                    ext
+                }
             }
             2 => item.url,
             3 => match item.status {

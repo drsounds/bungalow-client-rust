@@ -28,13 +28,7 @@ impl SPTrack {
     }
 
     pub fn with_id(id: i64, recording_id: &str, release_id: &str) -> Self {
-        Self {
-            id,
-            recording_id: recording_id.into(),
-            release_id: release_id.into(),
-            recording: None,
-            release: None,
-        }
+        Self { id, recording_id: recording_id.into(), release_id: release_id.into(), recording: None, release: None }
     }
 
     fn from_row(row: &Row) -> rusqlite::Result<Self> {

@@ -57,7 +57,9 @@ impl PlayQueueView {
         table.element().add_event_listener(
             "rowdblclicked",
             Rc::new(|_, e| {
-                if let (Some(args), Some(app)) = (downcast_args::<SPTableRowEventArgs>(e), bungalow_app_handle::current()) {
+                if let (Some(args), Some(app)) =
+                    (downcast_args::<SPTableRowEventArgs>(e), bungalow_app_handle::current())
+                {
                     app.play_queue_at_index(args.get_row());
                 }
                 0

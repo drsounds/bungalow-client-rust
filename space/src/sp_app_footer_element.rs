@@ -84,7 +84,9 @@ impl SPAppFooterElement {
         seek_bar.el.add_event_listener(
             "seek",
             Rc::new(|_, args| {
-                if let (Some(seek), Some(app)) = (downcast_args::<SPSeekEventArgs>(args), sp_application_context::current()) {
+                if let (Some(seek), Some(app)) =
+                    (downcast_args::<SPSeekEventArgs>(args), sp_application_context::current())
+                {
                     app.seek_to(seek.get_position_ms());
                 }
                 0

@@ -9,7 +9,6 @@ use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
 use space::sp_header_element::SPHeaderElement;
 use space::sp_view_element::{SPViewClass, SPViewElement};
 
-
 #[derive(Default)]
 pub struct UserView {
     pub view: SPViewElement,

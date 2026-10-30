@@ -112,8 +112,7 @@ impl SPElementClass for SPTableElement {
     fn paint(&self, x: i32, y: i32, g: &dyn SPGraphicsContext) {
         let x = x + self.el.get_x();
         let y = y + self.el.get_y();
-        self.el
-            .set_absolute_bounds(SPRectangle::new(x, y, self.el.get_width(), self.el.get_height()));
+        self.el.set_absolute_bounds(SPRectangle::new(x, y, self.el.get_width(), self.el.get_height()));
         let y = y + 1;
         let (Some(data_source), Some(skin)) = (self.data_source(), self.el.get_skin()) else {
             return;
@@ -142,8 +141,24 @@ impl SPElementClass for SPTableElement {
         let mut left = 0;
         for i in 0..column_count {
             let text = data_source.get_text_for_column(i);
-            g.draw_string(&text, &SPFontStyle::new("Tahoma", 13, 1, true, false), fg_color, x + padding + left, column_y + 1, column_width, ROW_H);
-            g.draw_string(&text, &SPFontStyle::new("Tahoma", 13, 1, false, false), fg_color.lighten(-10.0), x + padding + left, column_y, column_width, ROW_H);
+            g.draw_string(
+                &text,
+                &SPFontStyle::new("Tahoma", 13, 1, true, false),
+                fg_color,
+                x + padding + left,
+                column_y + 1,
+                column_width,
+                ROW_H,
+            );
+            g.draw_string(
+                &text,
+                &SPFontStyle::new("Tahoma", 13, 1, false, false),
+                fg_color.lighten(-10.0),
+                x + padding + left,
+                column_y,
+                column_width,
+                ROW_H,
+            );
             left += column_width;
         }
 
@@ -156,10 +171,8 @@ impl SPElementClass for SPTableElement {
 
         // Full-view mode: extend zebra stripes into the empty area below the last row
         if self.full_view.get() {
-            let parent_bottom = parent
-                .as_ref()
-                .map(|p| p.el().get_absolute_bounds().y + p.el().get_height())
-                .unwrap_or(0);
+            let parent_bottom =
+                parent.as_ref().map(|p| p.el().get_absolute_bounds().y + p.el().get_height()).unwrap_or(0);
             let mut empty_y = first_row_y + row_count * ROW_H;
             let mut ghost_row = row_count;
             if self.gradient_view.get() {
@@ -168,7 +181,15 @@ impl SPElementClass for SPTableElement {
                 if !skin.draw_element(g, &self.el.this(), "", &empty) {
                     let bg = self.el.get_background_color();
                     let gradient = SPGradient::new(bg.lighten(0.5), bg.lighten(0.0), 0);
-                    g.fill_rounded_linear_gradient_rectangle(x, empty_y, width, parent_bottom - empty_y, 0, 0, &gradient);
+                    g.fill_rounded_linear_gradient_rectangle(
+                        x,
+                        empty_y,
+                        width,
+                        parent_bottom - empty_y,
+                        0,
+                        0,
+                        &gradient,
+                    );
                 }
             } else {
                 while empty_y < parent_bottom {
@@ -279,7 +300,9 @@ impl SPElementClass for SPTableElement {
     /// Keyboard navigation.
     fn process_event(&self, event: &SPEvent) {
         if event.type_ == "keydown" {
-            let (Some(ke), Some(data_source)) = (downcast_args::<SPKeyEventArgs>(event.args.as_ref()), self.data_source()) else {
+            let (Some(ke), Some(data_source)) =
+                (downcast_args::<SPKeyEventArgs>(event.args.as_ref()), self.data_source())
+            else {
                 return;
             };
             let row_count = data_source.get_row_count();

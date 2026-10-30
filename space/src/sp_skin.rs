@@ -159,7 +159,13 @@ impl SPSkinBase {
 pub trait SPSkin {
     fn base(&self) -> &SPSkinBase;
 
-    fn draw_element(&self, gc: &dyn SPGraphicsContext, element: &ElementRef, state: &str, bounds: &SPRectangle) -> bool {
+    fn draw_element(
+        &self,
+        gc: &dyn SPGraphicsContext,
+        element: &ElementRef,
+        state: &str,
+        bounds: &SPRectangle,
+    ) -> bool {
         false
     }
     /// The part of an element's bounds left for its content once the
@@ -171,13 +177,85 @@ pub trait SPSkin {
     fn get_text_color(&self, element: &ElementRef, state: &str) -> Option<SPColor> {
         None
     }
-    fn draw_table_row(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, i: i32, x: i32, y: i32, width: i32, height: i32, row: i32) {}
-    fn draw_table_header(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, x: i32, y: i32, width: i32, height: i32) {}
-    fn draw_tab_bar_tab(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, tab: &SPTab, index: i32, active: bool, x: i32, y: i32, width: i32, height: i32) {}
-    fn draw_tab_bar_tool_button(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, button: &SPTabToolButton, x: i32, y: i32, width: i32, height: i32) {}
-    fn draw_tab_bar(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, x: i32, y: i32, width: i32, height: i32) {}
-    fn draw_tree_item(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, item: &SPTreeItem, item_height: i32, x: i32, y: i32, width: i32, height: i32) {}
-    fn draw_section_header(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, title: &str, x: i32, y: i32, width: i32, height: i32) {}
+    fn draw_table_row(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        i: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        row: i32,
+    ) {
+    }
+    fn draw_table_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+    }
+    fn draw_tab_bar_tab(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        tab: &SPTab,
+        index: i32,
+        active: bool,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+    }
+    fn draw_tab_bar_tool_button(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        button: &SPTabToolButton,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+    }
+    fn draw_tab_bar(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+    }
+    fn draw_tree_item(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        item: &SPTreeItem,
+        item_height: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+    }
+    fn draw_section_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        title: &str,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+    }
 
     fn set_glossy(&self, value: bool) {}
     fn is_glossy(&self) -> bool {

@@ -10,10 +10,7 @@ pub struct SPNavigateEventArgs {
 
 impl SPNavigateEventArgs {
     pub fn new(url: &str) -> Self {
-        Self {
-            uri: SPUri::new(url),
-            url: url.to_string(),
-        }
+        Self { uri: SPUri::new(url), url: url.to_string() }
     }
     pub fn get_url(&self) -> String {
         self.url.clone()

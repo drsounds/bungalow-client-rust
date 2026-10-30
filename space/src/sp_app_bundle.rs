@@ -67,12 +67,7 @@ impl SPAppBundle {
 }
 
 pub(crate) fn localized(values: &BTreeMap<String, String>, lang: &str) -> String {
-    values
-        .get(lang)
-        .or_else(|| values.get("en"))
-        .or_else(|| values.values().next())
-        .cloned()
-        .unwrap_or_default()
+    values.get(lang).or_else(|| values.get("en")).or_else(|| values.values().next()).cloned().unwrap_or_default()
 }
 
 /// Reads a localized field such as `{"AppName": {"en": "..."}}`; a plain

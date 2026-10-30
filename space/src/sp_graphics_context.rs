@@ -22,7 +22,19 @@ pub trait SPGraphicsContext {
     }
     fn set_control_attribute(&self, element: &ElementRef, name: &str, value: &str) {}
     #[allow(clippy::too_many_arguments)]
-    fn draw_image_part(&self, image: &SPImage, x: i32, y: i32, width: i32, height: i32, x1: i32, y1: i32, x2: i32, y2: i32) {}
+    fn draw_image_part(
+        &self,
+        image: &SPImage,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+    ) {
+    }
     fn draw_skin_image(&self, resource_id: &str, x: i32, y: i32, w: i32, h: i32) {}
     fn restore_origo(&self) {}
     fn set_origo(&self, x: i32, y: i32) {}
@@ -34,7 +46,17 @@ pub trait SPGraphicsContext {
     fn fill_rounded_rectangle(&self, x: i32, y: i32, w: i32, h: i32, r: i32, color: SPColor) {}
     fn draw_rounded_rectangle(&self, x: i32, y: i32, w: i32, h: i32, r: i32, color: SPColor) {}
     #[allow(clippy::too_many_arguments)]
-    fn fill_rounded_linear_gradient_rectangle(&self, x: i32, y: i32, w: i32, h: i32, r: i32, dir: i32, gradient: &SPGradient) {}
+    fn fill_rounded_linear_gradient_rectangle(
+        &self,
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32,
+        r: i32,
+        dir: i32,
+        gradient: &SPGradient,
+    ) {
+    }
     fn draw_image(&self, image: &SPImage, x: i32, y: i32, w: i32, h: i32) {}
     fn draw_control(&self, name: &str, element: &ElementRef, x: i32, y: i32, w: i32, h: i32) {}
     #[allow(clippy::too_many_arguments)]
@@ -62,7 +84,15 @@ pub trait SPGraphicsContext {
     fn draw_input_element(&self, element: &ElementRef, x: i32, y: i32, w: i32, h: i32) {}
 
     #[allow(clippy::too_many_arguments)]
-    fn draw_image_slices(&self, slices: &BTreeMap<String, Slice>, selector: &str, left: i32, top: i32, width: i32, height: i32) {
+    fn draw_image_slices(
+        &self,
+        slices: &BTreeMap<String, Slice>,
+        selector: &str,
+        left: i32,
+        top: i32,
+        width: i32,
+        height: i32,
+    ) {
         if let Some(slice) = slices.get(selector) {
             self.draw_image_part(&slice.image, left, top, width, height, slice.x1, slice.y1, slice.x2, slice.y2);
         }

@@ -71,9 +71,6 @@ impl SPEntity {
 
     /// Asks the first resolver that accepts `uri`.
     pub fn request(&self, method: &str, uri: &str, data: Option<&dyn Any>) -> Option<Promise> {
-        self.resolvers
-            .iter()
-            .find(|r| r.accepts_uri(uri))
-            .map(|r| r.request(method, uri, data))
+        self.resolvers.iter().find(|r| r.accepts_uri(uri)).map(|r| r.request(method, uri, data))
     }
 }

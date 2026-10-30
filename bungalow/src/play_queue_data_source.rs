@@ -15,10 +15,7 @@ pub struct PlayQueueDataSource {
 
 impl Default for PlayQueueDataSource {
     fn default() -> Self {
-        Self {
-            entries: RefCell::new(Vec::new()),
-            active_index: Cell::new(-1),
-        }
+        Self { entries: RefCell::new(Vec::new()), active_index: Cell::new(-1) }
     }
 }
 
@@ -49,9 +46,7 @@ impl SPTableDataSource for PlayQueueDataSource {
         if column == 0 { "Track" } else { "Artist" }.into()
     }
     fn get_text_for_cell(&self, column: i32, row: i32) -> String {
-        self.entry(row)
-            .map(|e| if column == 0 { e.display_title } else { e.display_artist })
-            .unwrap_or_default()
+        self.entry(row).map(|e| if column == 0 { e.display_title } else { e.display_artist }).unwrap_or_default()
     }
     fn is_row_playable(&self, row: i32) -> bool {
         self.entry(row).map(|e| e.playable).unwrap_or(false)

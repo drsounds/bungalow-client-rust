@@ -34,11 +34,7 @@ impl SPVisualizationParam {
         Self::make(name, label, SPVisualizationParamData::Enum { value, options })
     }
     fn make(name: &str, label: &str, data: SPVisualizationParamData) -> Self {
-        Self {
-            name: name.to_string(),
-            label: label.to_string(),
-            data,
-        }
+        Self { name: name.to_string(), label: label.to_string(), data }
     }
 }
 

@@ -30,19 +30,14 @@ fn append_text(stack: &mut [SPXmlNode], text: &str) {
     }
     parent.text.push_str(text);
     if !parent.children.last().is_some_and(|child| child.text_node) {
-        parent.children.push(SPXmlNode {
-            text_node: true,
-            ..Default::default()
-        });
+        parent.children.push(SPXmlNode { text_node: true, ..Default::default() });
     }
     parent.children.last_mut().unwrap().text.push_str(text);
 }
 
 fn start_node(element: &quick_xml::events::BytesStart) -> Result<SPXmlNode, String> {
-    let mut node = SPXmlNode {
-        name: String::from_utf8_lossy(element.name().as_ref()).into_owned(),
-        ..Default::default()
-    };
+    let mut node =
+        SPXmlNode { name: String::from_utf8_lossy(element.name().as_ref()).into_owned(), ..Default::default() };
     for attribute in element.attributes() {
         let attribute = attribute.map_err(|e| e.to_string())?;
         let key = String::from_utf8_lossy(attribute.key.as_ref()).into_owned();
@@ -108,8 +103,7 @@ pub fn parse_sp_xml(xml: &str) -> Result<SPXmlNode, String> {
     if !stack.is_empty() {
         return Err("unclosed token".into());
     }
-    root.filter(|node| !node.name.is_empty())
-        .ok_or_else(|| "XML document has no root element".to_string())
+    root.filter(|node| !node.name.is_empty()).ok_or_else(|| "XML document has no root element".to_string())
 }
 
 #[cfg(test)]

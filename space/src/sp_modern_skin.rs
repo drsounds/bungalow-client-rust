@@ -61,11 +61,7 @@ pub struct SPModernSkin {
 
 impl Default for SPModernSkin {
     fn default() -> Self {
-        Self {
-            base: SPSkinBase::new(),
-            glossy: Cell::new(false),
-            button_style: Cell::new(SPButtonStyle::Flat),
-        }
+        Self { base: SPSkinBase::new(), glossy: Cell::new(false), button_style: Cell::new(SPButtonStyle::Flat) }
     }
 }
 
@@ -140,11 +136,29 @@ impl SPSkin for SPModernSkin {
                     SPButtonStyle::Aqua => {
                         g.fill_rounded_rectangle(b.x, b.y, b.width, b.height, MODERN_RADIUS, with_alpha(btn_bg, 230));
                         let top_h = b.height * 2 / 5;
-                        let hi_spec = SPGradient::new(SPColor::new(255, 255, 255, 165), SPColor::new(255, 255, 255, 0), 0);
-                        g.fill_rounded_linear_gradient_rectangle(b.x + 3, b.y + 2, b.width - 6, top_h, MODERN_RADIUS, 0, &hi_spec);
+                        let hi_spec =
+                            SPGradient::new(SPColor::new(255, 255, 255, 165), SPColor::new(255, 255, 255, 0), 0);
+                        g.fill_rounded_linear_gradient_rectangle(
+                            b.x + 3,
+                            b.y + 2,
+                            b.width - 6,
+                            top_h,
+                            MODERN_RADIUS,
+                            0,
+                            &hi_spec,
+                        );
                         let bot_h = (b.height / 7).max(3);
-                        let bot_spec = SPGradient::new(SPColor::new(255, 255, 255, 0), SPColor::new(255, 255, 255, 45), 0);
-                        g.fill_rounded_linear_gradient_rectangle(b.x + 2, b.y + b.height - bot_h - 2, b.width - 4, bot_h, 3, 0, &bot_spec);
+                        let bot_spec =
+                            SPGradient::new(SPColor::new(255, 255, 255, 0), SPColor::new(255, 255, 255, 45), 0);
+                        g.fill_rounded_linear_gradient_rectangle(
+                            b.x + 2,
+                            b.y + b.height - bot_h - 2,
+                            b.width - 4,
+                            bot_h,
+                            3,
+                            0,
+                            &bot_spec,
+                        );
                     }
                 }
                 // Gloss sheen — independent of button style
@@ -202,7 +216,17 @@ impl SPSkin for SPModernSkin {
         }
     }
 
-    fn draw_table_row(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, _i: i32, x: i32, y: i32, width: i32, height: i32, row: i32) {
+    fn draw_table_row(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        _i: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        row: i32,
+    ) {
         let tint_color = table.el.get_tint_color();
         let bg = resolve_background(&table.el, tint_color);
         let dark = table.el.get_color_scheme() == SP_COLOR_SCHEME_DARK;
@@ -218,13 +242,17 @@ impl SPSkin for SPModernSkin {
         }
     }
 
-    fn draw_table_header(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_table_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let bg = resolve_background(&table.el, table.el.get_tint_color());
-        let col_count = table
-            .data_source()
-            .map(|ds| ds.get_column_count())
-            .filter(|c| *c > 0)
-            .unwrap_or(1);
+        let col_count = table.data_source().map(|ds| ds.get_column_count()).filter(|c| *c > 0).unwrap_or(1);
         let col_width = width / col_count;
         g.fill_rectangle(x, y, width, height, with_alpha(bg, 220));
         if self.glossy.get() {
@@ -239,7 +267,18 @@ impl SPSkin for SPModernSkin {
         g.draw_line(x, y + height - 1, x + width, y + height - 1, divider);
     }
 
-    fn draw_tab_bar_tab(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, _tab: &SPTab, _index: i32, active: bool, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar_tab(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        _tab: &SPTab,
+        _index: i32,
+        active: bool,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         // Inactive tabs: no fill, just spacing — they exist in the empty tab bar background
         if !active {
             return;
@@ -258,7 +297,15 @@ impl SPSkin for SPModernSkin {
         g.fill_rounded_rectangle(x + 2, y + 2, width - 4, height - 3, 7, rim);
     }
 
-    fn draw_tab_bar(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let bg = resolve_background(&tab_bar.el, tab_bar.el.get_tint_color());
         g.fill_rectangle(x, y, width, height, with_alpha(bg, 215));
         if self.glossy.get() {
@@ -266,15 +313,41 @@ impl SPSkin for SPModernSkin {
         }
     }
 
-    fn draw_tree_item(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, item: &SPTreeItem, item_height: i32, x: i32, y: i32, _width: i32, _height: i32) {
+    fn draw_tree_item(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        item: &SPTreeItem,
+        item_height: i32,
+        x: i32,
+        y: i32,
+        _width: i32,
+        _height: i32,
+    ) {
         if item.is_selected() || item.is_highlighted() {
             let alpha = if item.is_selected() { 160 } else { 70 };
             // Pill-shaped selection indicator inset from edges
-            g.fill_rounded_rectangle(x + 4, y + 2, tree_view.el.get_width() - 8, item_height - 4, 6, SPColor::new(99, 149, 234, alpha));
+            g.fill_rounded_rectangle(
+                x + 4,
+                y + 2,
+                tree_view.el.get_width() - 8,
+                item_height - 4,
+                6,
+                SPColor::new(99, 149, 234, alpha),
+            );
         }
     }
 
-    fn draw_section_header(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, title: &str, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_section_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        title: &str,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         // Modern: no background fill — just a muted, small label
         let fs = tree_view.el.get_font_style();
         let style = SPFontStyle::new(&fs.get_family(), fs.get_height() - 2, fs.get_weight(), false, false);

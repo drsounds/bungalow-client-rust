@@ -15,10 +15,7 @@ pub struct SPResource {
 
 impl SPResource {
     pub fn new(uri: &str) -> Self {
-        Self {
-            uri: uri.to_string(),
-            ..Self::default()
-        }
+        Self { uri: uri.to_string(), ..Self::default() }
     }
 
     pub fn get(&self, key: &str, default_value: &str) -> String {

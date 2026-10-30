@@ -7,7 +7,6 @@ use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
 use space::sp_spider_view_element::SPSpiderViewElement;
 use space::sp_view_element::{SPViewClass, SPViewElement};
 
-
 #[derive(Default)]
 pub struct SpaceView {
     pub spider: SPSpiderViewElement,

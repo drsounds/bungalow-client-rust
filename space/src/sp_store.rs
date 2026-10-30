@@ -39,10 +39,7 @@ impl SPStore {
 
     pub fn set(self: &Rc<Self>, key: &str, value: Rc<RefCell<SPResource>>) {
         self.values.borrow_mut().insert(key.to_string(), value.clone());
-        let args = SPStoreEventArgs {
-            type_: SPStoreEventType::Add,
-            object: value,
-        };
+        let args = SPStoreEventArgs { type_: SPStoreEventType::Add, object: value };
         let sender = SPObject::Other(self.clone());
         self.observable.notify("update", Some(&sender), &args);
     }

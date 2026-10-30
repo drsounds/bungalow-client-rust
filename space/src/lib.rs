@@ -1,7 +1,6 @@
 //! Space: a lightweight retained-mode GUI framework rendering XUL-like markup.
 //! Port of the `space/` directory of bungalow-client.
 
-pub mod sp_element;
 pub mod libspace;
 pub mod sp_aero_color_slider;
 pub mod sp_app_bundle;
@@ -17,6 +16,7 @@ pub mod sp_classic_skin;
 pub mod sp_color;
 pub mod sp_color_chooser;
 pub mod sp_container_view_element;
+pub mod sp_element;
 pub mod sp_element_factory;
 pub mod sp_embedded_browser;
 pub mod sp_entity;

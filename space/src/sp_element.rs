@@ -618,11 +618,7 @@ impl SPElement {
     }
 
     pub fn get_string_attribute(&self, attr: &str, default_value: &str) -> String {
-        self.string_attributes
-            .borrow()
-            .get(attr)
-            .cloned()
-            .unwrap_or_else(|| default_value.to_string())
+        self.string_attributes.borrow().get(attr).cloned().unwrap_or_else(|| default_value.to_string())
     }
 
     pub fn set_string_attribute_silently(&self, attr: &str, value: &str) {
@@ -630,11 +626,8 @@ impl SPElement {
     }
 
     pub fn set_string_attribute(&self, attr: &str, value: &str) {
-        let old_value = self
-            .string_attributes
-            .borrow_mut()
-            .insert(attr.to_string(), value.to_string())
-            .unwrap_or_default();
+        let old_value =
+            self.string_attributes.borrow_mut().insert(attr.to_string(), value.to_string()).unwrap_or_default();
         let args = SPAttributeChangedEventArgs::new(attr, value, &old_value, "string");
         self.notify_self("attributechanged", &args);
     }
@@ -1506,11 +1499,7 @@ impl SPElement {
                 request_data = parsed;
             }
         }
-        let action = request_data
-            .get("command")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string();
+        let action = request_data.get("command").and_then(Value::as_str).unwrap_or_default().to_string();
 
         // Render whatever the store already knows (memory or the JSON cache)
         // right away, then re-render when the resolver delivers fresh data.
@@ -1529,13 +1518,7 @@ impl SPElement {
                     uri,
                     Rc::new(move |_, _| {
                         if let Some(this) = weak.upgrade() {
-                            this.element().render_template(
-                                &source,
-                                "GET",
-                                &uri_owned,
-                                "",
-                                &Value::Object(Map::new()),
-                            );
+                            this.element().render_template(&source, "GET", &uri_owned, "", &Value::Object(Map::new()));
                         }
                     }),
                 )
@@ -1568,9 +1551,7 @@ impl SPElement {
     /// never retrying the error view itself).
     pub fn load_xul(&self, filename: &str) {
         const ERROR_VIEW: &str = "./views/error.xml";
-        let root = std::fs::read_to_string(filename)
-            .ok()
-            .and_then(|contents| parse_sp_xml(&contents).ok());
+        let root = std::fs::read_to_string(filename).ok().and_then(|contents| parse_sp_xml(&contents).ok());
         match root {
             Some(root) => self.load_xul_from_xml_doc(&root),
             None => {
@@ -1624,7 +1605,9 @@ impl SPElement {
                 elm.element().add_event_listener(
                     "click",
                     Rc::new(move |sender, _args| {
-                        if let (Some(responder), Some(sender)) = (responder.upgrade(), sender.and_then(SPObject::element)) {
+                        if let (Some(responder), Some(sender)) =
+                            (responder.upgrade(), sender.and_then(SPObject::element))
+                        {
                             responder.element().on_post_back_button_click(sender);
                         }
                         0
@@ -1653,10 +1636,7 @@ impl SPElement {
 
     fn on_post_back_button_click(&self, button: &ElementRef) {
         let mut form_data = self.get_form_data();
-        form_data.insert(
-            "command".into(),
-            Value::String(button.element().get_string_attribute("onclick", "submit")),
-        );
+        form_data.insert("command".into(), Value::String(button.element().get_string_attribute("onclick", "submit")));
         self.post_back(&Value::Object(form_data));
     }
 
@@ -1670,10 +1650,7 @@ impl SPElement {
         let mut form_data = Map::new();
         for child in self.get_child_nodes() {
             if let Some(input) = child.as_any().downcast_ref::<crate::sp_input_element::SPInputElement>() {
-                form_data.insert(
-                    input.element().get_string_attribute("name", ""),
-                    Value::String(input.get_value()),
-                );
+                form_data.insert(input.element().get_string_attribute("name", ""), Value::String(input.get_value()));
             }
             for (key, value) in child.element().get_form_data() {
                 form_data.insert(key, value);

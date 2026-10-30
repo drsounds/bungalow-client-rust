@@ -10,7 +10,6 @@ use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
 use space::sp_text_element::SPTextElement;
 use space::sp_view_element::{SPViewClass, SPViewElement};
 
-
 #[derive(Default)]
 pub struct DoctrineView {
     pub container: SPContainerViewElement,

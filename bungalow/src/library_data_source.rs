@@ -173,7 +173,12 @@ mod tests {
         db.upsert_recording("GB1", "Bohemian Rhapsody", "");
         db.set_recording_artists(
             "GB1",
-            &[crate::database::ArtistRelationship { artist_isni: "1".into(), artist_name: String::new(), is_primary: true, number: 0 }],
+            &[crate::database::ArtistRelationship {
+                artist_isni: "1".into(),
+                artist_name: String::new(),
+                is_primary: true,
+                number: 0,
+            }],
         );
         let track = db.upsert_track("GB1", "");
         db.ensure_save(track);

@@ -119,8 +119,7 @@ impl SPAeroColorSlider {
             on_change(self.value.get());
         }
         let this = self.el.this();
-        self.el
-            .dispatch_event("change", &SPAeroSliderEventArgs { value: self.value.get() }, Some(&this.as_object()));
+        self.el.dispatch_event("change", &SPAeroSliderEventArgs { value: self.value.get() }, Some(&this.as_object()));
     }
 
     fn on_mouse_move(&self, _sender: Option<&SPObject>, e: &dyn SPEventArgs) {
@@ -158,21 +157,53 @@ impl SPElementClass for SPAeroColorSlider {
                     let end = SPColor::from_hsl(stops[i as usize + 1], 1.0, 0.55, 255);
                     let sx = track_x + i * seg_w;
                     let sw = if i == segments - 1 { track_w - i * seg_w } else { seg_w };
-                    g.fill_rounded_linear_gradient_rectangle(sx, track_y, sw, TRACK_H, 0, 0, &SPGradient::new(start, end, 0));
+                    g.fill_rounded_linear_gradient_rectangle(
+                        sx,
+                        track_y,
+                        sw,
+                        TRACK_H,
+                        0,
+                        0,
+                        &SPGradient::new(start, end, 0),
+                    );
                 }
             }
             SPAeroSliderType::Saturation => {
                 let gray = SPColor::from_hsl(hue, 0.0, 0.55, 255);
                 let full = SPColor::from_hsl(hue, 1.0, 0.55, 255);
-                g.fill_rounded_linear_gradient_rectangle(track_x, track_y, track_w, TRACK_H, 0, 0, &SPGradient::new(gray, full, 0));
+                g.fill_rounded_linear_gradient_rectangle(
+                    track_x,
+                    track_y,
+                    track_w,
+                    TRACK_H,
+                    0,
+                    0,
+                    &SPGradient::new(gray, full, 0),
+                );
             }
             SPAeroSliderType::Lightness => {
                 let black = SPColor::from_hsl(hue, sat, 0.05, 255);
                 let mid = SPColor::from_hsl(hue, sat, 0.55, 255);
                 let white = SPColor::from_hsl(hue, sat * 0.3, 0.95, 255);
                 let half = track_w / 2;
-                g.fill_rounded_linear_gradient_rectangle(track_x, track_y, half, TRACK_H, 0, 0, &SPGradient::new(black, mid, 0));
-                g.fill_rounded_linear_gradient_rectangle(track_x + half, track_y, track_w - half, TRACK_H, 0, 0, &SPGradient::new(mid, white, 0));
+                g.fill_rounded_linear_gradient_rectangle(
+                    track_x,
+                    track_y,
+                    half,
+                    TRACK_H,
+                    0,
+                    0,
+                    &SPGradient::new(black, mid, 0),
+                );
+                g.fill_rounded_linear_gradient_rectangle(
+                    track_x + half,
+                    track_y,
+                    track_w - half,
+                    TRACK_H,
+                    0,
+                    0,
+                    &SPGradient::new(mid, white, 0),
+                );
             }
         }
         g.draw_rounded_rectangle(track_x, track_y, track_w, TRACK_H, 4, SPColor::new(0, 0, 0, 60));
@@ -180,15 +211,36 @@ impl SPElementClass for SPAeroColorSlider {
         let ratio = if self.type_ == SPAeroSliderType::Hue { value / 360.0 } else { value };
         let knob_cx = track_x + (ratio * track_w as f32) as i32;
         let knob_cy = abs_y + h / 2;
-        g.fill_rounded_rectangle(knob_cx - KNOB_R + 1, knob_cy - KNOB_R + 1, KNOB_R * 2, KNOB_R * 2, KNOB_R, SPColor::new(0, 0, 0, 60));
-        g.fill_rounded_rectangle(knob_cx - KNOB_R, knob_cy - KNOB_R, KNOB_R * 2, KNOB_R * 2, KNOB_R, SPColor::new(255, 255, 255, 245));
+        g.fill_rounded_rectangle(
+            knob_cx - KNOB_R + 1,
+            knob_cy - KNOB_R + 1,
+            KNOB_R * 2,
+            KNOB_R * 2,
+            KNOB_R,
+            SPColor::new(0, 0, 0, 60),
+        );
+        g.fill_rounded_rectangle(
+            knob_cx - KNOB_R,
+            knob_cy - KNOB_R,
+            KNOB_R * 2,
+            KNOB_R * 2,
+            KNOB_R,
+            SPColor::new(255, 255, 255, 245),
+        );
         let preview = match self.type_ {
             SPAeroSliderType::Hue => SPColor::from_hsl(value, 0.85, 0.55, 255),
             SPAeroSliderType::Saturation => SPColor::from_hsl(hue, value, 0.55, 255),
             SPAeroSliderType::Lightness => SPColor::from_hsl(hue, sat, value, 255),
         };
         g.draw_rounded_rectangle(knob_cx - KNOB_R, knob_cy - KNOB_R, KNOB_R * 2, KNOB_R * 2, KNOB_R, preview);
-        g.draw_rounded_rectangle(knob_cx - KNOB_R + 1, knob_cy - KNOB_R + 1, KNOB_R * 2 - 2, KNOB_R * 2 - 2, KNOB_R - 1, SPColor::new(80, 80, 80, 120));
+        g.draw_rounded_rectangle(
+            knob_cx - KNOB_R + 1,
+            knob_cy - KNOB_R + 1,
+            KNOB_R * 2 - 2,
+            KNOB_R * 2 - 2,
+            KNOB_R - 1,
+            SPColor::new(80, 80, 80, 120),
+        );
     }
 
     fn mouse_down(&self, _sender: Option<&SPObject>, e: &dyn SPEventArgs) {

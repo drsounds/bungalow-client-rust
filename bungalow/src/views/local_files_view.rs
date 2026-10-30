@@ -66,10 +66,7 @@ impl LocalFilesView {
     fn on_table_double_click(&self, row: i32) {
         let Some(ds) = self.data_source.borrow().clone() else { return };
         let Some(app) = bungalow_app_handle::current() else { return };
-        app.play_context(PlayContext {
-            entries: ds.build_queue_entries(),
-            start_index: row.max(0) as usize,
-        });
+        app.play_context(PlayContext { entries: ds.build_queue_entries(), start_index: row.max(0) as usize });
     }
 }
 

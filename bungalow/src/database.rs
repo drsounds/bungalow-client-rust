@@ -317,9 +317,7 @@ impl Database {
 
     /// The id of a bookmark, or -1 if not found.
     pub fn get_bookmark_id(&self, uri: &str) -> i32 {
-        self.db
-            .query_row("SELECT id FROM bookmarks WHERE uri = ? LIMIT 1;", params![uri], |r| r.get(0))
-            .unwrap_or(-1)
+        self.db.query_row("SELECT id FROM bookmarks WHERE uri = ? LIMIT 1;", params![uri], |r| r.get(0)).unwrap_or(-1)
     }
 
     /// Top-level bookmarks whose URI starts with `uri_prefix`, ordered by created_at.
@@ -345,21 +343,20 @@ impl Database {
         let Ok(mut stmt) = self.db.prepare(sql) else {
             return Vec::new();
         };
-        stmt.query_map(args, |r| {
-            Ok(Bookmark {
-                id: r.get(0)?,
-                uri: r.get(1)?,
-                title: r.get(2)?,
-                parent_id,
-            })
-        })
-        .map(|rows| rows.flatten().collect())
-        .unwrap_or_default()
+        stmt.query_map(args, |r| Ok(Bookmark { id: r.get(0)?, uri: r.get(1)?, title: r.get(2)?, parent_id }))
+            .map(|rows| rows.flatten().collect())
+            .unwrap_or_default()
     }
 
     // ── Music metadata CRUD ───────────────────────────────────────────────────
 
-    fn query_strings<T>(&self, sql: &str, args: &[&dyn rusqlite::ToSql], make: impl Fn(Vec<String>) -> T, n: usize) -> Vec<T> {
+    fn query_strings<T>(
+        &self,
+        sql: &str,
+        args: &[&dyn rusqlite::ToSql],
+        make: impl Fn(Vec<String>) -> T,
+        n: usize,
+    ) -> Vec<T> {
         let Ok(mut stmt) = self.db.prepare(sql) else {
             return Vec::new();
         };
@@ -516,10 +513,9 @@ impl Database {
             )
             .optional();
         if let Ok(Some(id)) = deleted {
-            let _ = self.db.execute(
-                "UPDATE saves SET deleted_at = NULL, saved_at = datetime('now') WHERE id = ?;",
-                params![id],
-            );
+            let _ = self
+                .db
+                .execute("UPDATE saves SET deleted_at = NULL, saved_at = datetime('now') WHERE id = ?;", params![id]);
             return id;
         }
         if self.db.execute("INSERT INTO saves (track_id) VALUES (?);", params![track_id]).is_err() {
@@ -639,7 +635,12 @@ mod tests {
         assert_eq!(db.upsert_track("SE001", ""), track);
         db.set_recording_artists(
             "SE001",
-            &[ArtistRelationship { artist_isni: "0001".into(), artist_name: String::new(), is_primary: true, number: 0 }],
+            &[ArtistRelationship {
+                artist_isni: "0001".into(),
+                artist_name: String::new(),
+                is_primary: true,
+                number: 0,
+            }],
         );
         let save = db.ensure_save(track);
         assert_eq!(db.ensure_save(track), save);

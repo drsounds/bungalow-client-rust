@@ -20,10 +20,7 @@ pub struct EluaConf {
 
 impl Default for EluaConf {
     fn default() -> Self {
-        Self {
-            strip_comments: true,
-            auto_begin_response_call: false,
-        }
+        Self { strip_comments: true, auto_begin_response_call: false }
     }
 }
 

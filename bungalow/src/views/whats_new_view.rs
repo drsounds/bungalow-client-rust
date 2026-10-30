@@ -7,7 +7,6 @@ use space::sp_container_view_element::SPContainerViewElement;
 use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
 use space::sp_view_element::{SPViewClass, SPViewElement};
 
-
 #[derive(Default)]
 pub struct WhatsNewView {
     pub container: SPContainerViewElement,

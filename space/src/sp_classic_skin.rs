@@ -106,9 +106,25 @@ impl SPSkin for SPClassicSkin {
                 g.fill_rounded_linear_gradient_rectangle(b.x, b.y, b.width, b.height, radius, 0, &grad);
                 if glossy {
                     let gloss = SPGradient::new(bg.lighten(0.2), bg.lighten(0.3), 0);
-                    g.fill_rounded_linear_gradient_rectangle(b.x + 5, b.y + 2, b.width - 10, b.height / 2, radius, 0, &gloss);
+                    g.fill_rounded_linear_gradient_rectangle(
+                        b.x + 5,
+                        b.y + 2,
+                        b.width - 10,
+                        b.height / 2,
+                        radius,
+                        0,
+                        &gloss,
+                    );
                     let gloss2 = SPGradient::new(bg.lighten(-0.2).alpha(0.0), bg.lighten(0.0), 0);
-                    g.fill_rounded_linear_gradient_rectangle(b.x + 10, b.y + b.height / 2 - 2, b.width - 20, b.height / 2, radius, 0, &gloss2);
+                    g.fill_rounded_linear_gradient_rectangle(
+                        b.x + 10,
+                        b.y + b.height / 2 - 2,
+                        b.width - 20,
+                        b.height / 2,
+                        radius,
+                        0,
+                        &gloss2,
+                    );
                 }
                 g.draw_rounded_rectangle(b.x, b.y, b.width, b.height, radius, bg.lighten(-0.5));
                 let text = elm.get_inner_text();
@@ -131,15 +147,36 @@ impl SPSkin for SPClassicSkin {
                 }
                 Self::linear(g, b.x, b.y, b.width, b.height, SPGradient::new(bg.lighten(0.1), bg.lighten(-0.1), 0));
                 if glossy {
-                    Self::linear(g, b.x, b.y + 1, b.width, b.height / 2, SPGradient::new(bg.lighten(0.2), bg.lighten(0.0), 0));
+                    Self::linear(
+                        g,
+                        b.x,
+                        b.y + 1,
+                        b.width,
+                        b.height / 2,
+                        SPGradient::new(bg.lighten(0.2), bg.lighten(0.0), 0),
+                    );
                 }
                 g.draw_line(b.x, b.y + b.height - 1, b.x + b.width, b.y + b.height - 1, bg.lighten(-0.5));
                 true
             }
             "appfooter" => {
-                Self::linear(g, b.x, b.y, b.width, b.height, SPGradient::new(bg_color.lighten(0.2), bg_color.lighten(0.1), 0));
+                Self::linear(
+                    g,
+                    b.x,
+                    b.y,
+                    b.width,
+                    b.height,
+                    SPGradient::new(bg_color.lighten(0.2), bg_color.lighten(0.1), 0),
+                );
                 if glossy {
-                    Self::linear(g, b.x, b.y + 2, b.width, b.height / 2, SPGradient::new(bg_color.lighten(0.2), bg_color.lighten(0.3), 0));
+                    Self::linear(
+                        g,
+                        b.x,
+                        b.y + 2,
+                        b.width,
+                        b.height / 2,
+                        SPGradient::new(bg_color.lighten(0.2), bg_color.lighten(0.3), 0),
+                    );
                     Self::linear(
                         g,
                         b.x,
@@ -166,7 +203,17 @@ impl SPSkin for SPClassicSkin {
         }
     }
 
-    fn draw_table_row(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, _i: i32, x: i32, y: i32, width: i32, height: i32, row: i32) {
+    fn draw_table_row(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        _i: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        row: i32,
+    ) {
         if table.is_row_selected(row) {
             g.fill_rectangle(x, y, width, height, SPColor::new(166, 218, 251, 255));
             return;
@@ -192,7 +239,15 @@ impl SPSkin for SPClassicSkin {
         }
     }
 
-    fn draw_table_header(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_table_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let mut bg = table.el.get_background_color();
         if let Some(tint) = table.el.get_tint_color() {
             bg = bg.tint(&tint);
@@ -200,11 +255,7 @@ impl SPSkin for SPClassicSkin {
         if table.el.get_color_scheme() == SP_COLOR_SCHEME_DARK {
             bg = bg.lighten(0.2);
         }
-        let col_count = table
-            .data_source()
-            .map(|ds| ds.get_column_count())
-            .filter(|c| *c > 0)
-            .unwrap_or(1);
+        let col_count = table.data_source().map(|ds| ds.get_column_count()).filter(|c| *c > 0).unwrap_or(1);
         let col_width = width / col_count;
         // Draw each column header cell like a button (default gradient + gloss)
         for col in 0..col_count {
@@ -214,7 +265,14 @@ impl SPSkin for SPClassicSkin {
             Self::linear(g, cx, y, cw, height, SPGradient::new(bg.lighten(0.1), bg.lighten(-0.2), 0));
             // Gloss upper highlight
             if self.glossy.get() {
-                Self::linear(g, cx + 2, y + 1, cw - 4, height / 2, SPGradient::new(bg.lighten(0.25), bg.lighten(0.15), 0));
+                Self::linear(
+                    g,
+                    cx + 2,
+                    y + 1,
+                    cw - 4,
+                    height / 2,
+                    SPGradient::new(bg.lighten(0.25), bg.lighten(0.15), 0),
+                );
                 Self::linear(
                     g,
                     cx + 2,
@@ -233,7 +291,16 @@ impl SPSkin for SPClassicSkin {
         g.draw_line(x, y + height - 1, x + width, y + height - 1, bg.lighten(-0.5));
     }
 
-    fn draw_tab_bar_tool_button(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, _button: &SPTabToolButton, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar_tool_button(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        _button: &SPTabToolButton,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let mut bg = tab_bar.el.get_background_color();
         let tint = tab_bar.el.get_tint_color();
         if let Some(tint) = tint {
@@ -250,7 +317,18 @@ impl SPSkin for SPClassicSkin {
         g.draw_line(x, y, x, y + height - 1, border);
     }
 
-    fn draw_tab_bar_tab(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, _tab: &SPTab, index: i32, active: bool, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar_tab(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        _tab: &SPTab,
+        index: i32,
+        active: bool,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let mut bg = tab_bar.el.get_background_color();
         let mut active_bg = bg;
         let mut shadow = self.shadow_color;
@@ -271,7 +349,15 @@ impl SPSkin for SPClassicSkin {
         g.draw_line(x + width, y, x + width, y + height - 1, shadow);
     }
 
-    fn draw_tab_bar(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let mut shadow = self.shadow_color;
         let mut bg = tab_bar.el.get_background_color();
         if let Some(tint) = tab_bar.el.get_tint_color() {
@@ -287,7 +373,17 @@ impl SPSkin for SPClassicSkin {
         g.draw_line(x, y + height - 1, x + width, y + height - 1, shadow);
     }
 
-    fn draw_tree_item(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, item: &SPTreeItem, item_height: i32, x: i32, y: i32, _width: i32, _height: i32) {
+    fn draw_tree_item(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        item: &SPTreeItem,
+        item_height: i32,
+        x: i32,
+        y: i32,
+        _width: i32,
+        _height: i32,
+    ) {
         if item.is_selected() {
             g.fill_rectangle(x, y, tree_view.el.get_width(), item_height, SPColor::new(166, 218, 251, 255));
         }
@@ -296,7 +392,16 @@ impl SPSkin for SPClassicSkin {
         }
     }
 
-    fn draw_section_header(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, title: &str, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_section_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        title: &str,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         // Muted label — slightly smaller font
         let fs = tree_view.el.get_font_style();
         let style = SPFontStyle::new(&fs.get_family(), fs.get_height() - 1, fs.get_weight(), false, false);

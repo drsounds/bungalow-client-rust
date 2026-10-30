@@ -31,7 +31,8 @@ impl SPElementClass for SPButtonElement {
         self.el.resize_to_text(true, true);
     }
     fn paint(&self, x: i32, y: i32, c: &dyn SPGraphicsContext) {
-        let bounds = SPRectangle::new(self.el.get_x() + x, self.el.get_y() + y, self.el.get_width(), self.el.get_height());
+        let bounds =
+            SPRectangle::new(self.el.get_x() + x, self.el.get_y() + y, self.el.get_width(), self.el.get_height());
         self.el.set_absolute_bounds(bounds);
         if let Some(skin) = self.el.get_skin() {
             skin.draw_element(c, &self.el.this(), state_class(self.el.get_state()), &bounds);

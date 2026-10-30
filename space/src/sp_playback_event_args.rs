@@ -13,11 +13,7 @@ pub struct SPPlaybackStateEventArgs {
 
 impl SPPlaybackStateEventArgs {
     pub fn new(playing: bool, position_ms: i32, duration_ms: i32) -> Self {
-        Self {
-            playing,
-            position_ms,
-            duration_ms,
-        }
+        Self { playing, position_ms, duration_ms }
     }
 }
 crate::impl_event_args!(SPPlaybackStateEventArgs, "SPPlaybackStateEventArgs");

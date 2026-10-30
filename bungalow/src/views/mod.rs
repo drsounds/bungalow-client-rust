@@ -35,7 +35,6 @@ macro_rules! tab_bar_view_overrides {
     };
 }
 
-
 pub mod artist_over_view;
 pub mod artist_view;
 pub mod config_view;

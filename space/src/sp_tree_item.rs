@@ -22,10 +22,7 @@ pub struct SPTreeItem {
 impl SPTreeItem {
     /// For section headers — no URI.
     pub fn section() -> Rc<Self> {
-        Rc::new(Self {
-            collapsed: Cell::new(true),
-            ..Self::default()
-        })
+        Rc::new(Self { collapsed: Cell::new(true), ..Self::default() })
     }
 
     pub fn new(uri: SPUri) -> Rc<Self> {

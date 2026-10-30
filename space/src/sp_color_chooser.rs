@@ -87,7 +87,8 @@ impl SPElementClass for SPColorChooser {
     }
 
     fn paint(&self, x: i32, y: i32, c: &dyn SPGraphicsContext) {
-        let bounds = SPRectangle::new(self.el.get_x() + x, self.el.get_y() + y, self.el.get_width(), self.el.get_height());
+        let bounds =
+            SPRectangle::new(self.el.get_x() + x, self.el.get_y() + y, self.el.get_width(), self.el.get_height());
         self.el.set_absolute_bounds(bounds);
         let selected = self.selected_color.get().to_html_color();
         for (i, color) in self.colors.iter().enumerate() {
@@ -96,8 +97,22 @@ impl SPElementClass for SPColorChooser {
             let sy = bounds.y + row * (SWATCH_SIZE + SWATCH_GAP);
             c.fill_rounded_rectangle(sx, sy, SWATCH_SIZE, SWATCH_SIZE, 4, *color);
             if color.to_html_color() == selected {
-                c.draw_rounded_rectangle(sx - 2, sy - 2, SWATCH_SIZE + 4, SWATCH_SIZE + 4, 6, SPColor::new(255, 255, 255, 255));
-                c.draw_rounded_rectangle(sx - 1, sy - 1, SWATCH_SIZE + 2, SWATCH_SIZE + 2, 5, SPColor::new(30, 30, 30, 220));
+                c.draw_rounded_rectangle(
+                    sx - 2,
+                    sy - 2,
+                    SWATCH_SIZE + 4,
+                    SWATCH_SIZE + 4,
+                    6,
+                    SPColor::new(255, 255, 255, 255),
+                );
+                c.draw_rounded_rectangle(
+                    sx - 1,
+                    sy - 1,
+                    SWATCH_SIZE + 2,
+                    SWATCH_SIZE + 2,
+                    5,
+                    SPColor::new(30, 30, 30, 220),
+                );
             }
         }
     }

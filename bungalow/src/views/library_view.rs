@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use space::impl_element_base;
-use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
+use space::sp_element::{construct, ElementRef, ElementRefExt, SPElementBase, SPElementClass};
 use space::sp_event_args::downcast_args;
 use space::sp_playback_event_args::SPTableRowEventArgs;
 use space::sp_section_element::SPSectionElement;
@@ -136,11 +136,20 @@ impl LibraryView {
         if track_id <= 0 {
             return;
         }
-        match platform_ui::show_popup_menu(&vec![(ID_PLAY, "Play".into()), (ID_EDIT, "Edit...".into())]) {
-            ID_PLAY => self.play_row_in_context(row),
-            ID_EDIT => self.edit_track(track_id),
-            _ => {}
-        }
+        let view = Rc::downgrade(&self.element().this());
+        let items = vec![(ID_PLAY, "Play".into()), (ID_EDIT, "Edit...".into())];
+        platform_ui::show_popup_menu(
+            &items,
+            Box::new(move |selection| {
+                let Some(view) = view.upgrade() else { return };
+                let Some(view) = view.downcast::<LibraryView>() else { return };
+                match selection {
+                    ID_PLAY => view.play_row_in_context(row),
+                    ID_EDIT => view.edit_track(track_id),
+                    _ => {}
+                }
+            }),
+        );
     }
 }
 

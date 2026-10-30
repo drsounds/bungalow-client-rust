@@ -538,7 +538,9 @@ impl ConfigView {
             if let Some(v) = obj.get("fullWidthAddressBar").and_then(Value::as_bool) {
                 p.full_width_address_bar.set(v);
             }
-            if let (Some(v), Some(input)) = (obj.get("downloadsFolder").and_then(Value::as_str), &w.downloads_folder_input) {
+            if let (Some(v), Some(input)) =
+                (obj.get("downloadsFolder").and_then(Value::as_str), &w.downloads_folder_input)
+            {
                 input.set_value(v);
             }
             if let (Some(v), Some(input)) = (obj.get("musicFolder").and_then(Value::as_str), &w.music_folder_input) {
@@ -646,7 +648,7 @@ impl ConfigView {
         } else {
             // "modern" and installed skin bundles are skin.xml skins; fall
             // back to procedural drawing if the bundle is missing.
-            SPAppManager::with(|m| m.create_skin(&skin_type)).unwrap_or_else(|| Rc::new(SPModernSkin::new()))
+            SPAppManager::create_skin(&skin_type).unwrap_or_else(|| Rc::new(SPModernSkin::new()))
         };
         new_skin.set_glossy(p.glossy.get());
         new_skin.set_button_style(p.button_style.get());
@@ -717,7 +719,10 @@ impl ConfigView {
     fn on_bundle_skin_clicked(&self, sender: Option<&SPObject>) {
         let skin_type = self.w.borrow().bundle_skin_buttons.iter().find_map(|(btn, type_)| {
             let btn: ElementRef = btn.clone();
-            sender.and_then(SPObject::element).is_some_and(|e| std::ptr::addr_eq(Rc::as_ptr(e), Rc::as_ptr(&btn))).then(|| type_.clone())
+            sender
+                .and_then(SPObject::element)
+                .is_some_and(|e| std::ptr::addr_eq(Rc::as_ptr(e), Rc::as_ptr(&btn)))
+                .then(|| type_.clone())
         });
         if let Some(skin_type) = skin_type {
             *self.pending.skin_type.borrow_mut() = skin_type;
@@ -791,4 +796,3 @@ impl SPElementClass for ConfigView {
         Some(self)
     }
 }
-

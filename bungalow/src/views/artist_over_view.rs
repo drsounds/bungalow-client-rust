@@ -7,7 +7,6 @@ use space::sp_element::{construct, ElementRef, SPElementBase, SPElementClass};
 use space::sp_hbox_element::SPHBoxElement;
 use space::sp_view_element::{SPViewClass, SPViewElement};
 
-
 #[derive(Default)]
 pub struct ArtistOverView {
     pub view: SPViewElement,

@@ -33,11 +33,7 @@ pub struct SPTab {
 
 impl SPTab {
     pub fn new(name: &str, id: &str, uri: &str) -> Self {
-        Self {
-            id: id.to_string(),
-            name: name.to_string(),
-            uri: uri.to_string(),
-        }
+        Self { id: id.to_string(), name: name.to_string(), uri: uri.to_string() }
     }
     pub fn get_id(&self) -> String {
         self.id.clone()
@@ -116,11 +112,7 @@ impl SPTabBarElement {
     }
 
     pub fn add_tool_button(&self, id: &str, label: &str, icon: Option<Rc<SPImage>>) {
-        self.tool_buttons.borrow_mut().push(SPTabToolButton {
-            id: id.to_string(),
-            label: label.to_string(),
-            icon,
-        });
+        self.tool_buttons.borrow_mut().push(SPTabToolButton { id: id.to_string(), label: label.to_string(), icon });
     }
 
     pub fn remove_tool_button(&self, id: &str) {

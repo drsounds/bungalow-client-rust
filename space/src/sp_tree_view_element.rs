@@ -180,7 +180,10 @@ impl SPTreeViewElement {
             if rel_y > top && rel_y < top + row_h {
                 if !item.is_section() {
                     item.set_highlighted(true);
-                    self.notify_item("itemhighlighted", TreeViewEventArgs { item: Some(item.clone()), ..Default::default() });
+                    self.notify_item(
+                        "itemhighlighted",
+                        TreeViewEventArgs { item: Some(item.clone()), ..Default::default() },
+                    );
                 }
             } else {
                 item.set_highlighted(false);
@@ -250,10 +253,7 @@ impl SPElementClass for SPTreeViewElement {
         }
         let skin = self.el.get_skin();
         let this = self.el.this();
-        if !skin
-            .as_ref()
-            .is_some_and(|skin| skin.draw_element(g, &this, "", &SPRectangle::new(x, y, width, height)))
-        {
+        if !skin.as_ref().is_some_and(|skin| skin.draw_element(g, &this, "", &SPRectangle::new(x, y, width, height))) {
             g.fill_rectangle(x, y, width, height, bg_color);
         }
 
@@ -274,7 +274,15 @@ impl SPElementClass for SPTreeViewElement {
                 // Disclosure arrow for expandable items
                 if item.has_children() {
                     let arrow = if item.is_collapsed() { "\u{25b6}" } else { "\u{25bc}" };
-                    g.draw_string(arrow, &fs, SPColor::new(128, 128, 128, 180), x + 4, y + top, Self::ARROW_WIDTH, row_h);
+                    g.draw_string(
+                        arrow,
+                        &fs,
+                        SPColor::new(128, 128, 128, 180),
+                        x + 4,
+                        y + top,
+                        Self::ARROW_WIDTH,
+                        row_h,
+                    );
                 }
                 // Icon — always reserve ICON_SLOT px regardless of whether icon loads
                 let icon_x = x + if depth == 1 { Self::CHILD_INDENT } else { Self::INDENT };

@@ -121,7 +121,12 @@ impl SPTabBarViewElement {
         }
     }
 
-    fn on_tree_changed(view: &ElementRef, tab_bar: &SPTabBarElement, tab_stack: &SPTabStackElement, e: &dyn SPEventArgs) {
+    fn on_tree_changed(
+        view: &ElementRef,
+        tab_bar: &SPTabBarElement,
+        tab_stack: &SPTabStackElement,
+        e: &dyn SPEventArgs,
+    ) {
         let uri = view.el().get_uri();
         if uri.is_empty() {
             return;

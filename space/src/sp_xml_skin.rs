@@ -50,27 +50,17 @@ fn float_attr(node: &SPXmlNode, key: &str, def: f32) -> f32 {
 }
 
 fn bool_attr(node: &SPXmlNode, key: &str, def: bool) -> bool {
-    node.attributes
-        .get(key)
-        .map(|v| v != "false" && v != "none" && v != "0")
-        .unwrap_or(def)
+    node.attributes.get(key).map(|v| v != "false" && v != "none" && v != "0").unwrap_or(def)
 }
 
 fn parse_ints(text: &str) -> Vec<i32> {
-    text.split([',', ';', ' '])
-        .filter(|t| !t.is_empty())
-        .filter_map(|t| t.parse().ok())
-        .collect()
+    text.split([',', ';', ' ']).filter(|t| !t.is_empty()).filter_map(|t| t.parse().ok()).collect()
 }
 
 /// #rgb, #rrggbb or #rrggbbaa.
 pub fn parse_hex(text: &str) -> Option<SPColor> {
     let hex = text.strip_prefix('#')?;
-    let hex: String = if hex.len() == 3 {
-        hex.chars().flat_map(|c| [c, c]).collect()
-    } else {
-        hex.to_string()
-    };
+    let hex: String = if hex.len() == 3 { hex.chars().flat_map(|c| [c, c]).collect() } else { hex.to_string() };
     if (hex.len() != 6 && hex.len() != 8) || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
         return None;
     }
@@ -287,11 +277,7 @@ impl SPXmlSkin {
             return;
         }
         for child in node.children.iter().filter(|c| !c.text_node && c.name == "property") {
-            let mut prop = Property {
-                name: attr(child, "name"),
-                value: attr(child, "value"),
-                ..Default::default()
-            };
+            let mut prop = Property { name: attr(child, "name"), value: attr(child, "value"), ..Default::default() };
             prop.image_id = url_reference(&prop.value);
 
             if !prop.image_id.is_empty() {
@@ -318,7 +304,8 @@ impl SPXmlSkin {
                 }
                 prop.sw = x2 - x1;
                 prop.sh = y2 - y1;
-                prop.source = Some(Rc::new(image.slice_image(x1 as u32, y1 as u32, prop.sw as u32, prop.sh as u32, 0, 0, 0, 0)));
+                prop.source =
+                    Some(Rc::new(image.slice_image(x1 as u32, y1 as u32, prop.sw as u32, prop.sh as u32, 0, 0, 0, 0)));
                 let n = parse_ints(&attr(child, "nine-patch"));
                 if n.len() == 4 {
                     (prop.left, prop.top, prop.right, prop.bottom) = (n[0], n[1], n[2], n[3]);
@@ -604,7 +591,15 @@ impl SPSkin for SPXmlSkin {
         self.resolve_color(&prop.value, element.element().get_color_scheme(), true)
     }
 
-    fn draw_tab_bar(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let (rule, matched) = self.find_element_rule(&tab_bar.el.this(), "");
         if !matched {
             return self.modern.draw_tab_bar(g, tab_bar, x, y, width, height);
@@ -615,7 +610,17 @@ impl SPSkin for SPXmlSkin {
     }
 
     /// sp-table-row with state "selected", "odd" or "even".
-    fn draw_table_row(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, i: i32, x: i32, y: i32, width: i32, height: i32, row: i32) {
+    fn draw_table_row(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        i: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        row: i32,
+    ) {
         let mut states = Vec::new();
         if table.is_row_selected(row) {
             states.push("selected");
@@ -633,7 +638,15 @@ impl SPSkin for SPXmlSkin {
     }
 
     /// sp-table-header.
-    fn draw_table_header(&self, g: &dyn SPGraphicsContext, table: &SPTableElement, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_table_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        table: &SPTableElement,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let scheme = table.el.get_color_scheme();
         let (rule, matched) = self.find_rule(&["sp-table-header".to_string()], &[""], scheme);
         if !matched {
@@ -645,7 +658,17 @@ impl SPSkin for SPXmlSkin {
     }
 
     /// sp-treeitem with state "selected" or "hover".
-    fn draw_tree_item(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, item: &SPTreeItem, item_height: i32, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tree_item(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        item: &SPTreeItem,
+        item_height: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let mut states = Vec::new();
         if item.is_selected() {
             states.push("selected");
@@ -666,7 +689,18 @@ impl SPSkin for SPXmlSkin {
         }
     }
 
-    fn draw_tab_bar_tab(&self, g: &dyn SPGraphicsContext, tab_bar: &SPTabBarElement, tab: &SPTab, index: i32, active: bool, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_tab_bar_tab(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tab_bar: &SPTabBarElement,
+        tab: &SPTab,
+        index: i32,
+        active: bool,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         let states: &[&str] = if active { &["selected", "active", ""] } else { &[""] };
         let scheme = tab_bar.el.get_color_scheme();
         let (rule, matched) = self.find_rule(&["sp-tabbar-tab".to_string()], states, scheme);
@@ -678,7 +712,16 @@ impl SPSkin for SPXmlSkin {
         }
     }
 
-    fn draw_section_header(&self, g: &dyn SPGraphicsContext, tree_view: &SPTreeViewElement, title: &str, x: i32, y: i32, width: i32, height: i32) {
+    fn draw_section_header(
+        &self,
+        g: &dyn SPGraphicsContext,
+        tree_view: &SPTreeViewElement,
+        title: &str,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
         self.modern.draw_section_header(g, tree_view, title, x, y, width, height);
     }
 }
@@ -705,7 +748,10 @@ mod tests {
         skin.load_from_str(SKIN, ".").unwrap();
         assert_eq!(skin.get_name(), "Test");
         assert_eq!(skin.resolve_color("$panel", 0, false), Some(SPColor::new(0xee, 0xee, 0xee, 255)));
-        assert_eq!(skin.resolve_color("$panel.foreground", SP_COLOR_SCHEME_DARK, false), Some(SPColor::new(0xfa, 0xfa, 0xfa, 255)));
+        assert_eq!(
+            skin.resolve_color("$panel.foreground", SP_COLOR_SCHEME_DARK, false),
+            Some(SPColor::new(0xfa, 0xfa, 0xfa, 255))
+        );
         assert_eq!(skin.resolve_color("#abc", 0, false), Some(SPColor::new(0xaa, 0xbb, 0xcc, 255)));
     }
 
