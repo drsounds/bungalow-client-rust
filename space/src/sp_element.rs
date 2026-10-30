@@ -133,7 +133,7 @@ pub trait SPElementClass: SPElementBase {
     }
 
     fn set_visible(&self, value: bool) {
-        self.element().visible.set(value);
+        self.element().set_visible_default(value);
     }
 
     fn show(&self) {
@@ -1231,6 +1231,11 @@ impl SPElement {
 
     pub fn is_visible(&self) -> bool {
         self.visible.get()
+    }
+
+    /// The base `SPElement::setVisible`.
+    pub fn set_visible_default(&self, value: bool) {
+        self.visible.set(value);
     }
 
     pub fn is_scrollable(&self) -> bool {
