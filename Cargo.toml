@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = ["elua", "space", "spider", "bungalow", "client"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Alexander Forselius"]
+
+[workspace.dependencies]
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+regex = "1"
+quick-xml = "0.37"
+png = "0.17"
+rusqlite = { version = "0.32", features = ["bundled"] }
+chrono = "0.4"
+dirs = "5"
+ureq = "2"
+egui = "0.31"
+eframe = { version = "0.31", default-features = false, features = ["default_fonts", "glow", "x11", "wayland"] }
+log = "0.4"
+env_logger = "0.11"

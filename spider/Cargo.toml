@@ -1,0 +1,13 @@
+[package]
+name = "spider"
+description = "Spider: server-side style Lua (elua) views rendered into Space elements"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+elua = { path = "../elua" }
+space = { path = "../space" }
+mlua.workspace = true
+log.workspace = true

@@ -1,0 +1,25 @@
+[package]
+name = "bungalow"
+description = "Bungalow: the music library, playback services and views of the Bungalow client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[features]
+default = []
+# Plays local files with rodio (needs ALSA headers on Linux).
+audio = ["dep:rodio"]
+
+[dependencies]
+space = { path = "../space" }
+spider = { path = "../spider" }
+serde_json.workspace = true
+rusqlite.workspace = true
+dirs.workspace = true
+ureq.workspace = true
+log.workspace = true
+rodio = { version = "0.20", optional = true, default-features = false, features = ["symphonia-all"] }
+
+[dev-dependencies]
+tempfile = "3"

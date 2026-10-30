@@ -1,0 +1,10 @@
+[package]
+name = "elua"
+description = "Embedded Lua templates: compiles <% %> markup to Lua source and loads it with mlua"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mlua.workspace = true
