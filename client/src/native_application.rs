@@ -164,17 +164,18 @@ impl NativeApplication {
     }
 
     /// The frame loop's timers: work posted to the UI thread (download
-    /// progress, favicons, resolved entities), the playback position timer
-    /// and the player canvas audio timer. Returns how long until a timer is
-    /// due again.
+    /// progress, favicons, resolved entities), the playback position timer,
+    /// the player canvas audio timer and the frames of Swimming apps being
+    /// shown. Returns how long until a timer is due again.
     pub fn timer(&self) -> Option<Duration> {
         ui_dispatcher::run_pending();
         let position = self.app.as_ref().and_then(|a| a.tick());
         let canvas = SPPlayerCanvasElement::tick_all();
-        match (position, canvas) {
-            (Some(a), Some(b)) => Some(a.min(b)),
-            (a, b) => a.or(b),
-        }
+        #[cfg(feature = "swimming")]
+        let swimming = crate::views::sp_swimming_app_element::SPSwimmingAppElement::tick_all();
+        #[cfg(not(feature = "swimming"))]
+        let swimming = None;
+        [position, canvas, swimming].into_iter().flatten().min()
     }
 
     /// Develop menu: act on the visible web page or app.

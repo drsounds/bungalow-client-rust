@@ -58,6 +58,9 @@ pub trait SPGraphicsContext {
     ) {
     }
     fn draw_image(&self, image: &SPImage, x: i32, y: i32, w: i32, h: i32) {}
+    /// Frees whatever the backend cached for `image` (e.g. its texture), for
+    /// images that are replaced every frame.
+    fn release_image(&self, image: &SPImage) {}
     fn draw_control(&self, name: &str, element: &ElementRef, x: i32, y: i32, w: i32, h: i32) {}
     #[allow(clippy::too_many_arguments)]
     fn draw_string(&self, text: &str, font: &SPFontStyle, color: SPColor, x: i32, y: i32, w: i32, h: i32) {}

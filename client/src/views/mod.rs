@@ -64,3 +64,5 @@ pub mod sp_music_visualizer_canvas_element;
 pub mod sp_music_visualizer_element;
 pub mod sp_player_canvas_element;
 pub mod store_view;
+#[cfg(feature = "swimming")]
+pub mod sp_swimming_app_element;

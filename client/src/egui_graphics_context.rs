@@ -391,6 +391,10 @@ impl SPGraphicsContext for EguiGraphicsContext {
         self.draw_image_part(image, x, y, w, h, 0, 0, image.width as i32, image.height as i32);
     }
 
+    fn release_image(&self, image: &SPImage) {
+        self.textures.borrow_mut().remove(&image.id);
+    }
+
     fn draw_control(&self, name: &str, element: &ElementRef, x: i32, y: i32, w: i32, h: i32) {
         if name == "input" {
             self.draw_input_element(element, x, y, w, h);

@@ -11,7 +11,10 @@ name = "bungalow-client"
 path = "src/main.rs"
 
 [features]
-default = []
+default = ["swimming"]
+# Runs "AppType": "Swimming" bundles: React (TSX) apps rendered natively by
+# the swimming framework, with no browser engine.
+swimming = ["dep:swimming", "dep:swimming-core"]
 # Embeds web sites and HTML5 app bundles with Wef (CEF offscreen rendering).
 # Needs a CEF binary distribution; see the README.
 wef = ["dep:wef"]
@@ -29,3 +32,5 @@ env_logger.workspace = true
 ureq.workspace = true
 rfd = "0.15"
 wef = { version = "0.6", optional = true }
+swimming = { workspace = true, optional = true }
+swimming-core = { workspace = true, optional = true }

@@ -81,6 +81,8 @@ Optional features of the `bungalow-client` package:
   runtime files next to the executable (`cargo wef build` does this).
 - `audio`: local playback through rodio (needs ALSA headers on Linux, e.g.
   `libasound2-dev`).
+- `swimming` (default): runs Swimming app bundles, see below. Builds QuickJS
+  from source, so it needs a C compiler.
 
 ```sh
 cargo run -p bungalow-client --features wef,audio
@@ -92,6 +94,38 @@ the queue work but nothing is played.
 
 Linux builds need the usual eframe dependencies (X11 or Wayland, OpenGL,
 `libxkbcommon-x11`). File dialogs go through the XDG desktop portal.
+
+## App types
+
+An app bundle's `manifest.json` picks how `bungalow:app:<id>` URIs run:
+
+| `AppType`    | Runs as |
+|--------------|---------|
+| (none)       | HTML5: `index.html` in an embedded browser (`wef`), or the remote `https://<id>.apps.bungalow.se` |
+| `"Native"`   | Lua MVC app rendered with native XUL elements (`SPNativeApp`) |
+| `"Swimming"` | React (TSX) app rendered natively by [swimming](https://github.com/drsounds/swimming), with no browser engine (`views/sp_swimming_app_element.rs`) |
+
+A Swimming app is built with `vite-plugin-swimming` into one IIFE bundle,
+which `"Main"` names (default `dist/bundle.js`; an `.html` entry with classic
+scripts also works):
+
+```json
+{
+    "BundleType": "Application",
+    "BundleIdentifier": "hello",
+    "AppName": { "en": "Hello" },
+    "AppType": "Swimming",
+    "Main": "dist/bundle.js"
+}
+```
+
+`bungalow:app:hello:albums:1` is delivered to the app as the route
+`/albums/1` (`history.replaceState` plus a `popstate` event, which
+`BrowserRouter` follows). The app gets left clicks, and its JS timers run
+while it is shown. Reload (Develop menu) restarts it with a fresh JS
+runtime. Since swimming does not draw glyphs yet, the text boxes of its
+layout are drawn by the Space graphics context. `Apps/swimmingtest` is a
+test app (open `bungalow:app:swimmingtest`).
 
 ## Differences from the C++ client
 

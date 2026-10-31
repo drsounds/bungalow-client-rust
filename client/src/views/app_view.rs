@@ -8,6 +8,10 @@
 //! with native elements (see SPNativeApp), one per app, kept alive while
 //! switching so controllers keep their state.
 //!
+//! With the `swimming` feature, bundles with "AppType": "Swimming" run as
+//! React apps rendered natively by the swimming framework (see
+//! SPSwimmingAppElement), likewise one per app and kept alive.
+//!
 //! With an embedded browser backend (the C++ `BUNGALOW_CEF` build; here the
 //! `wef` feature), other installed bundles that contain an index.html run
 //! locally in an embedded browser (one per app, kept alive while switching),
@@ -40,6 +44,8 @@ use space::sp_vbox_element::SPVBoxElement;
 use space::sp_view_element::{SPViewClass, SPViewElement};
 use space::sp_window_element::SPWindowElement;
 
+#[cfg(feature = "swimming")]
+use super::sp_swimming_app_element::SPSwimmingAppElement;
 use super::site_view::{hosted_uri_to_url, hosted_url_to_uri, SiteView, SiteViewClass, NAV_BAR_HEIGHT};
 
 const APP_PREFIX: &str = "bungalow:app:";
@@ -109,6 +115,11 @@ pub struct AppView {
     /// By app id; children of this view.
     native_apps: RefCell<BTreeMap<String, Rc<SPNativeAppElement>>>,
     active_native_app: RefCell<Option<Rc<SPNativeAppElement>>>,
+    /// By app id; children of this view.
+    #[cfg(feature = "swimming")]
+    swimming_apps: RefCell<BTreeMap<String, Rc<SPSwimmingAppElement>>>,
+    #[cfg(feature = "swimming")]
+    active_swimming_app: RefCell<Option<Rc<SPSwimmingAppElement>>>,
     /// By app id.
     local_apps: RefCell<BTreeMap<String, LocalApp>>,
     active_app: RefCell<Option<String>>,
@@ -253,7 +264,7 @@ impl AppView {
     /// false, with no app content shown, when `uri` belongs to the remote
     /// app path.
     fn navigate_bundle(self: &Rc<Self>, uri: &str) -> bool {
-        let mut shown = self.navigate_native_app(uri, false);
+        let mut shown = self.navigate_native_app(uri, false) || self.navigate_swimming_app(uri, false);
         if !shown && has_backend() {
             shown = self.navigate_local_app(uri);
         }
@@ -310,6 +321,7 @@ impl AppView {
     /// `None` hides all app content (and the site browser).
     fn show_native_app(&self, app: Option<Rc<SPNativeAppElement>>) {
         self.site.hide_site_browser();
+        self.hide_swimming_app();
         if let Some(browser) = self.active_browser() {
             browser.set_visible(false);
         }
@@ -341,6 +353,63 @@ impl AppView {
         }
         drop(parts);
         self.element().invalidate();
+    }
+
+    // ── Swimming app bundles ──────────────────────────────────────────────
+
+    /// Shows `uri` in a Swimming app bundle, restarting the app first if
+    /// asked. Returns false if `uri` is not in a Swimming app.
+    #[cfg(feature = "swimming")]
+    fn navigate_swimming_app(self: &Rc<Self>, uri: &str, restart: bool) -> bool {
+        let Some((app_id, path)) = split_app_uri(uri) else { return false };
+        let Some(bundle) = find_bundle(&app_id) else { return false };
+        if !SPSwimmingAppElement::is_swimming(&bundle) {
+            return false;
+        }
+        self.site.set_current_uri(uri);
+        let app = self.swimming_app_for(&bundle, restart);
+        self.show_native_app(None);
+        app.set_visible(true);
+        *self.active_swimming_app.borrow_mut() = Some(app.clone());
+        app.navigate(&path); // errors replace it with the error view
+        true
+    }
+
+    #[cfg(not(feature = "swimming"))]
+    fn navigate_swimming_app(self: &Rc<Self>, _uri: &str, _restart: bool) -> bool {
+        false
+    }
+
+    /// An app that failed to load reports it through the error handler
+    /// when navigated, which shows the error view.
+    #[cfg(feature = "swimming")]
+    fn swimming_app_for(self: &Rc<Self>, bundle: &SPAppBundle, restart: bool) -> Rc<SPSwimmingAppElement> {
+        if let Some(existing) = self.swimming_apps.borrow().get(&bundle.identifier) {
+            if restart {
+                existing.restart();
+            }
+            return existing.clone();
+        }
+        let this = self.element().this();
+        let app = SPSwimmingAppElement::new(Some(&this), bundle);
+        app.element().set_flex(1);
+        app.set_visible(false);
+        let weak = Rc::downgrade(self);
+        app.set_error_handler(Some(Rc::new(move |message: &str| {
+            if let Some(this) = weak.upgrade() {
+                this.show_error(message);
+            }
+        })));
+        this.append_child(&(app.clone() as ElementRef));
+        self.swimming_apps.borrow_mut().insert(bundle.identifier.clone(), app.clone());
+        app
+    }
+
+    fn hide_swimming_app(&self) {
+        #[cfg(feature = "swimming")]
+        if let Some(app) = self.active_swimming_app.borrow_mut().take() {
+            app.set_visible(false);
+        }
     }
 
     // ── Local HTML5 app bundles ───────────────────────────────────────────
@@ -470,6 +539,7 @@ impl AppView {
     /// remote path, which shows the site browser again.
     fn show_local_app(&self, app_id: Option<String>) {
         self.site.hide_site_browser();
+        self.hide_swimming_app();
         if let Some(native) = self.active_native_app.borrow_mut().take() {
             native.set_visible(false);
         }
@@ -506,12 +576,14 @@ impl SiteViewClass for AppView {
         hosted_url_to_uri(url, APP_PREFIX, APPS_DOMAIN)
     }
 
-    /// Native apps restart with a fresh Lua state and reloaded routes.
+    /// Native apps restart with a fresh Lua state and reloaded routes, and
+    /// Swimming apps with a fresh JS runtime and reloaded bundle.
     /// Keyed on the current URI rather than the shown app, so a native app
     /// that is showing an error can be reloaded once the error is fixed.
     fn reload(&self) {
         if let Some(rc) = self.me.borrow().upgrade() {
-            if rc.navigate_native_app(&self.site.get_current_uri(), true) {
+            let uri = self.site.get_current_uri();
+            if rc.navigate_native_app(&uri, true) || rc.navigate_swimming_app(&uri, true) {
                 return;
             }
         }

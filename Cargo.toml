@@ -9,6 +9,10 @@ license = "MIT"
 authors = ["Alexander Forselius"]
 
 [workspace.dependencies]
+# The swimming repo is a workspace; swimming-bridge is the crate that embeds
+# QuickJS and drives swimming-core/swimming-render.
+swimming = { git = "https://github.com/drsounds/swimming.git", package = "swimming-bridge" }
+swimming-core = { git = "https://github.com/drsounds/swimming.git", package = "swimming-core" }
 mlua = { version = "0.10", features = ["lua54", "vendored"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 regex = "1"
