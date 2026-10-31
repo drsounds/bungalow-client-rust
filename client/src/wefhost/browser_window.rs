@@ -323,11 +323,16 @@ impl BrowserWindow {
         }
     }
 
+    /// Called on every paint, so it only repaints when the bounds change;
+    /// repainting unconditionally would redraw the window nonstop.
     pub fn set_bounds(&self, x: i32, y: i32, width: i32, height: i32) {
-        self.bounds.set(egui::Rect::from_min_size(
+        let bounds = egui::Rect::from_min_size(
             egui::pos2(x as f32, y as f32),
             egui::vec2(width.max(0) as f32, height.max(0) as f32),
-        ));
+        );
+        if self.bounds.replace(bounds) == bounds {
+            return;
+        }
         let size = self.physical_size();
         if size != self.size.get() {
             self.size.set(size);

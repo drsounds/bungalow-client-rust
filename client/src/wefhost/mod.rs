@@ -275,7 +275,18 @@ mod host {
             let bounds = window.bounds();
             let surface = window.surface();
             match &surface.view {
-                Some(texture) => painter.image(texture.id(), bounds, uv, egui::Color32::WHITE),
+                // Drawn 1:1 at its own size, clipped to the bounds: while the
+                // window resizes, CEF's last frame is still the old size, and
+                // stretching it to the new bounds makes the page wobble.
+                Some(texture) => {
+                    let size = texture.size_vec2() / ui.ctx().pixels_per_point();
+                    painter.with_clip_rect(bounds).image(
+                        texture.id(),
+                        egui::Rect::from_min_size(bounds.min, size),
+                        uv,
+                        egui::Color32::WHITE,
+                    );
+                }
                 None => painter.rect_filled(bounds, 0.0, egui::Color32::WHITE),
             };
             if let (true, Some(popup), Some(rect)) = (surface.popup_visible, &surface.popup, surface.popup_rect) {
