@@ -1,0 +1,46 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug bungalow-client",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/bungalow-client.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                { "name": "RUST_LOG", "value": "info" },
+                { "name": "RUST_BACKTRACE", "value": "1" }
+            ],
+            "console": "integratedTerminal",
+            "preLaunchTask": "cargo build (debug)"
+        },
+        {
+            "name": "Debug bungalow-client (wef, audio)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/bungalow-client.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                { "name": "RUST_LOG", "value": "info" },
+                { "name": "RUST_BACKTRACE", "value": "1" }
+            ],
+            "console": "integratedTerminal",
+            "preLaunchTask": "cargo build (debug, wef, audio)"
+        },
+        {
+            "name": "Release bungalow-client",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/release/bungalow-client.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                { "name": "RUST_LOG", "value": "info" }
+            ],
+            "console": "integratedTerminal",
+            "preLaunchTask": "cargo build (release)"
+        }
+    ]
+}
