@@ -16,7 +16,7 @@
             "preLaunchTask": "cargo build (debug)"
         },
         {
-            "name": "Debug bungalow-client (wef, audio)",
+            "name": "Debug bungalow-client (cef, audio)",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/bungalow-client.exe",
@@ -27,7 +27,7 @@
                 { "name": "RUST_BACKTRACE", "value": "1" }
             ],
             "console": "integratedTerminal",
-            "preLaunchTask": "cargo build (debug, wef, audio)"
+            "preLaunchTask": "cargo build (debug, cef, audio)"
         },
         {
             "name": "Release bungalow-client",

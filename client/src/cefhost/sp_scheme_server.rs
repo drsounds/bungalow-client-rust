@@ -1,8 +1,8 @@
 //! Port of `SpSchemeHandler`: serves app bundles to the embedded browsers.
 //!
 //! CEF let the C++ client register an `sp://` scheme per request context;
-//! Wef has no custom schemes, so bundles are served over loopback HTTP
-//! instead, one origin per bundle: `http://<bundle>.localhost:<port>/`.
+//! this port keeps a single global profile, so bundles are served over
+//! loopback HTTP instead, one origin per bundle: `http://<bundle>.localhost:<port>/`.
 //! Chromium resolves every `*.localhost` name to the loopback address, and
 //! the separate origins keep each app's storage apart like the per-app
 //! profiles did.

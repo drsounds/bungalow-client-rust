@@ -74,8 +74,8 @@ impl NativeApplication {
         self.graphics = Some(graphics);
         self.window_element = Some(window_element.clone());
 
-        #[cfg(feature = "wef")]
-        crate::wefhost::register_backend(ctx);
+        #[cfg(feature = "cef")]
+        crate::cefhost::register_backend(ctx);
 
         let app = BungalowApp::new();
         self.app = Some(app.clone());

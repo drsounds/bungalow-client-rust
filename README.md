@@ -8,8 +8,8 @@ class structure: one Rust module per C++ class, with the same names in
 - Lua scripting uses [mlua](https://github.com/mlua-rs/mlua) (Lua 5.4, vendored).
 - The window and the Space renderer run on [egui/eframe](https://github.com/emilk/egui).
 - Embedded web content (HTML5 app bundles, web sites) uses
-  [Wef](https://crates.io/crates/wef), an offscreen CEF wrapper, instead of
-  CEF's native child windows.
+  CEF through the [`cef`](https://crates.io/crates/cef) crate, with offscreen
+  rendering instead of CEF's native child windows.
 - The `linux/` shell is not ported yet.
 
 ## Layout
@@ -42,11 +42,11 @@ The rest of `windows/` maps to `client/src`:
 | `PlatformUi.cpp` (dialogs)     | `platform.rs` (`ClientPlatformHooks`, rfd dialogs, egui popup menus) |
 | `SiteView`, `AppView`, `CuratorView`, `StoreView`, `PlayerView`, `SPAppView` | `views/` |
 | `SPPlayerCanvasElement`, `SPMusicVisualizerElement` | `views/` |
-| `cefhost/CefRuntime`           | `wefhost/wef_runtime.rs` |
-| `cefhost/CefBrowserWindow`     | `wefhost/browser_window.rs` |
-| `cefhost/CefAppBrowser`        | `wefhost/app_browser.rs` |
-| `cefhost/CefSiteBrowser`       | `wefhost/site_browser.rs` |
-| `cefhost/SpSchemeHandler`      | `wefhost/sp_scheme_server.rs` |
+| `cefhost/CefRuntime`           | `cefhost/cef_runtime.rs` |
+| `cefhost/CefBrowserWindow`     | `cefhost/browser_window.rs` |
+| `cefhost/CefAppBrowser`        | `cefhost/app_browser.rs` |
+| `cefhost/CefSiteBrowser`       | `cefhost/site_browser.rs` |
+| `cefhost/SpSchemeHandler`      | `cefhost/sp_scheme_server.rs` |
 
 ### How the C++ idioms are mapped
 
@@ -75,20 +75,22 @@ cargo run -p bungalow-client
 
 Optional features of the `bungalow-client` package:
 
-- `wef`: embedded browsers for HTML5 app bundles and web sites. Needs the CEF
-  binary distribution that Wef expects: set `CEF_ROOT` (default `~/.cef`) as
-  described in the [Wef README](https://crates.io/crates/wef), and put the CEF
-  runtime files next to the executable (`cargo wef build` does this).
+- `cef`: embedded browsers for HTML5 app bundles and web sites, through the
+  [`cef`](https://crates.io/crates/cef) crate. Its build downloads the matching
+  CEF binary distribution (or uses the one at `CEF_PATH`), builds CEF's C++
+  wrapper with CMake and Ninja (both must be on `PATH`, plus a C++ compiler),
+  and copies the CEF runtime files next to the executable in `target/`. On
+  macOS the app must be bundled with the CEF framework and helper apps.
 - `audio`: local playback through rodio (needs ALSA headers on Linux, e.g.
   `libasound2-dev`).
 - `swimming` (default): runs Swimming app bundles, see below. Builds QuickJS
   from source, so it needs a C compiler.
 
 ```sh
-cargo run -p bungalow-client --features wef,audio
+cargo run -p bungalow-client --features cef,audio
 ```
 
-Without `wef`, web sites open in the system browser and app bundles take the
+Without `cef`, web sites open in the system browser and app bundles take the
 same fallback as the C++ build without CEF. Without `audio`, playback state and
 the queue work but nothing is played.
 
@@ -101,7 +103,7 @@ An app bundle's `manifest.json` picks how `bungalow:app:<id>` URIs run:
 
 | `AppType`    | Runs as |
 |--------------|---------|
-| (none)       | HTML5: `index.html` in an embedded browser (`wef`), or the remote `https://<id>.apps.bungalow.se` |
+| (none)       | HTML5: `index.html` in an embedded browser (`cef`), or the remote `https://<id>.apps.bungalow.se` |
 | `"Native"`   | Lua MVC app rendered with native XUL elements (`SPNativeApp`) |
 | `"Swimming"` | React (TSX) app rendered natively by [swimming](https://github.com/drsounds/swimming), with no browser engine (`views/sp_swimming_app_element.rs`) |
 
@@ -147,20 +149,22 @@ Platform and toolkit:
 - **Startup** happens in the first frame, because egui has no fonts before
   then and the Space lays out text as it starts.
 
-Embedded browsers under Wef:
+Embedded browsers (offscreen CEF through the `cef` crate). The `cef` crate
+exposes the whole CEF API, but the port keeps the design of the earlier Wef
+backend for now; the first four points could move back to the C++ approach:
 
-- **No `sp://` scheme.** Wef cannot register custom schemes, so bundles are
-  served by a loopback HTTP server at `http://<bundle>.localhost:<port>/`, one
-  origin per bundle, and the shared API bundle at `http://import.localhost:<port>/`
-  (readable from any origin, as before). `Apps/import/scripts/sp.js` recognises
-  this hosting mode and maps `sp://<bundle>/x` to it.
-- **No per-app CEF profiles.** All browsers share Wef's profile; the separate
-  origins still keep each app's storage apart.
+- **No `sp://` scheme.** Bundles are served by a loopback HTTP server at
+  `http://<bundle>.localhost:<port>/`, one origin per bundle, and the shared
+  API bundle at `http://import.localhost:<port>/` (readable from any origin, as
+  before). `Apps/import/scripts/sp.js` recognises this hosting mode and maps
+  `sp://<bundle>/x` to it.
+- **No per-app CEF profiles.** All browsers share CEF's global profile; the
+  separate origins still keep each app's storage apart.
 - **No request filter.** Instead of `OnBeforeResourceLoad`, app pages get a
   Content-Security-Policy that allows the same sources (the bundle, the shared
   API bundle, `data:`, `blob:`, and the allowed https/wss hosts with their
   subdomains).
-- **Navigation is checked after the fact.** Wef has no `OnBeforeBrowse`, so a
+- **Navigation is checked after the fact.** Instead of `OnBeforeBrowse`, a
   page that leaves its app bundle, or a site that moves to a host that has not
   been allowed, is noticed when the address changes; the browser goes back
   and the host view gets the same callback as before. Redirects of a page the
@@ -168,14 +172,18 @@ Embedded browsers under Wef:
   handler in the page.
 - **Startup scripts** are injected into app pages by the server (before the
   page's own scripts) and into site pages when loading starts.
-- **No DevTools.** Wef has no inspector; Show Inspector reports that.
+- **`window.jsBridge.navigate(uri)`** is a V8 function the renderer process
+  installs in every script context; it sends a process message to the browser
+  process (the C++ `NavigateHandler`).
+- **DevTools** open in a native window of their own.
 - **No download interception.** Downloads started inside a site browser are not
   handed to the download manager.
 - **Dark mode** sets the page's `color-scheme`; `prefers-color-scheme` media
   queries do not follow it.
-- Keyboard input is limited to what Wef forwards (text, editing and navigation
-  keys); clipboard, select-all, undo and redo shortcuts are mapped to frame
-  commands.
+- Keyboard input is limited to text and editing/navigation keys; clipboard,
+  select-all, undo and redo shortcuts are mapped to frame commands.
+- CEF runs on an external message pump: it asks egui for a frame when it has
+  work, and every frame runs `CefDoMessageLoopWork`.
 
 Small fixes and choices in the port:
 

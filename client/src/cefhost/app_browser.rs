@@ -89,8 +89,8 @@ impl BrowserClient for AppClient {
                     }
                 }
                 None => {
-                    // CEF cancelled these in OnBeforeBrowse; Wef can only
-                    // notice them, so the page is taken back to the app.
+                    // The C++ client cancelled these in OnBeforeBrowse; this
+                    // port notices them, so the page is taken back to the app.
                     self.leave_bundle(&url);
                     if !window.go_back() {
                         window.load(&self.origin);
@@ -152,14 +152,14 @@ fn content_security_policy(shared_origin: &str, allowed_hosts: &BTreeSet<String>
     format!("default-src {}", sources.join(" "))
 }
 
-pub struct WefAppBrowser {
+pub struct CefAppBrowser {
     host: Rc<Host>,
     app_id: String,
     origin: String,
     window: Rc<BrowserWindow>,
 }
 
-impl WefAppBrowser {
+impl CefAppBrowser {
     pub fn new(
         host: &Rc<Host>,
         bundle: &SPAppBundle,
@@ -196,7 +196,7 @@ impl WefAppBrowser {
     }
 }
 
-impl Drop for WefAppBrowser {
+impl Drop for CefAppBrowser {
     fn drop(&mut self) {
         self.window.close();
         // Other browsers of the same app keep the bundle mounted.
@@ -206,7 +206,7 @@ impl Drop for WefAppBrowser {
     }
 }
 
-impl SPEmbeddedBrowser for WefAppBrowser {
+impl SPEmbeddedBrowser for CefAppBrowser {
     fn set_bounds(&self, x: i32, y: i32, width: i32, height: i32) {
         self.window.set_bounds(x, y, width, height);
     }

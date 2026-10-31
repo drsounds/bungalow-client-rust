@@ -5,8 +5,8 @@
 //! the File and Develop menus, the title and the minimize/maximize/close
 //! buttons. The caption and edges drag and resize the window.
 //!
-//! With the `wef` feature, CEF relaunches this executable for its renderer
-//! and GPU processes, so `main` first hands those over to Wef.
+//! With the `cef` feature, CEF relaunches this executable for its renderer
+//! and GPU processes, so `main` first hands those over to CEF.
 
 // The ported classes keep their whole C++ API, including members only the
 // C++ callers (or the not-yet-ported linux/ shell) used.
@@ -20,7 +20,7 @@ mod native_application;
 mod platform;
 #[macro_use]
 mod views;
-mod wefhost;
+mod cefhost;
 
 use std::rc::Rc;
 
@@ -243,8 +243,8 @@ impl MainFrame {
                     if item.is_some() || self.pressed_item.is_some() || menu_open {
                         continue;
                     }
-                    #[cfg(feature = "wef")]
-                    if wefhost::pointer_moved(pos) {
+                    #[cfg(feature = "cef")]
+                    if cefhost::pointer_moved(pos) {
                         continue;
                     }
                     let cmd = ctx.input(|i| i.modifiers.command);
@@ -294,8 +294,8 @@ impl MainFrame {
                             continue;
                         }
                     }
-                    #[cfg(feature = "wef")]
-                    if wefhost::pointer_button(pos, button_index, pressed, modifiers) {
+                    #[cfg(feature = "cef")]
+                    if cefhost::pointer_button(pos, button_index, pressed, modifiers) {
                         continue;
                     }
                     let name = if pressed { "mousedown" } else { "mouseup" };
@@ -308,8 +308,8 @@ impl MainFrame {
                         egui::MouseWheelUnit::Page => self.size.1 as f32,
                         egui::MouseWheelUnit::Point => 1.0,
                     };
-                    #[cfg(feature = "wef")]
-                    if wefhost::mouse_wheel(pos, delta * scale) {
+                    #[cfg(feature = "cef")]
+                    if cefhost::mouse_wheel(pos, delta * scale) {
                         continue;
                     }
                     if menu_open {
@@ -328,8 +328,8 @@ impl MainFrame {
                         self.open_menu = Some(CaptionItem::Develop);
                         continue;
                     }
-                    #[cfg(feature = "wef")]
-                    if wefhost::key(key, true, modifiers) {
+                    #[cfg(feature = "cef")]
+                    if cefhost::key(key, true, modifiers) {
                         continue;
                     }
                     if egui_has_keyboard || menu_open {
@@ -339,20 +339,20 @@ impl MainFrame {
                         self.app.key_event(code, modifiers.command);
                     }
                 }
-                #[cfg(feature = "wef")]
+                #[cfg(feature = "cef")]
                 egui::Event::Key { key, pressed: false, modifiers, .. } => {
-                    wefhost::key(key, false, modifiers);
+                    cefhost::key(key, false, modifiers);
                 }
-                #[cfg(feature = "wef")]
-                egui::Event::Cut => _ = wefhost::edit_command(wefhost::EditCommand::Cut),
-                #[cfg(feature = "wef")]
-                egui::Event::Copy => _ = wefhost::edit_command(wefhost::EditCommand::Copy),
-                #[cfg(feature = "wef")]
-                egui::Event::Paste(_) => _ = wefhost::edit_command(wefhost::EditCommand::Paste),
-                #[cfg(feature = "wef")]
+                #[cfg(feature = "cef")]
+                egui::Event::Cut => _ = cefhost::edit_command(cefhost::EditCommand::Cut),
+                #[cfg(feature = "cef")]
+                egui::Event::Copy => _ = cefhost::edit_command(cefhost::EditCommand::Copy),
+                #[cfg(feature = "cef")]
+                egui::Event::Paste(_) => _ = cefhost::edit_command(cefhost::EditCommand::Paste),
+                #[cfg(feature = "cef")]
                 egui::Event::Text(text) => {
                     if !egui_has_keyboard {
-                        wefhost::text(&text);
+                        cefhost::text(&text);
                     }
                 }
                 _ => {}
@@ -540,16 +540,16 @@ impl eframe::App for MainFrame {
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(Color32::from_rgb(38, 43, 54))).show(ctx, |ui| {
             ui.set_clip_rect(screen);
             self.app.paint(ui);
-            #[cfg(feature = "wef")]
-            wefhost::paint(ui);
+            #[cfg(feature = "cef")]
+            cefhost::paint(ui);
             self.paint_caption(ctx, ui);
         });
 
         self.caption_menu_ui(ctx);
         self.menus.ui(ctx);
 
-        #[cfg(feature = "wef")]
-        wefhost::pump();
+        #[cfg(feature = "cef")]
+        cefhost::pump();
 
         if let Some(delay) = next_timer {
             ctx.request_repaint_after(delay);
@@ -559,22 +559,22 @@ impl eframe::App for MainFrame {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.app.shutdown();
         platform_ui::set_hooks(None);
-        #[cfg(feature = "wef")]
-        wefhost::close_all_browsers();
+        #[cfg(feature = "cef")]
+        cefhost::close_all_browsers();
     }
 }
 
 fn main() -> eframe::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    #[cfg(feature = "wef")]
+    #[cfg(feature = "cef")]
     {
         // CEF relaunches this executable for its renderer and GPU processes.
-        if wefhost::execute_subprocess() {
+        if cefhost::execute_subprocess() {
             return Ok(());
         }
         // On failure app bundles show an error view; the rest of the UI still works.
-        wefhost::initialize();
+        cefhost::initialize();
     }
 
     let options = eframe::NativeOptions {
@@ -587,7 +587,7 @@ fn main() -> eframe::Result {
     };
     let result = eframe::run_native("Bungalow", options, Box::new(|cc| Ok(Box::new(MainFrame::new(cc)))));
 
-    #[cfg(feature = "wef")]
-    wefhost::shutdown();
+    #[cfg(feature = "cef")]
+    cefhost::shutdown();
     result
 }

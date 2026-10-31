@@ -1,6 +1,6 @@
 //! Port of `CefSiteBrowser`: ordinary web sites in an offscreen browser.
 //!
-//! All site browsers share Wef's single profile (the C++ "sites" profile).
+//! All site browsers share CEF's global profile (the C++ "sites" profile).
 //! Top-level pages stay in the browser for allowed hosts; bungalow: links,
 //! new windows and pages on other hosts are handed to the host element.
 
@@ -12,7 +12,7 @@ use bungalow::platform_ui;
 use space::sp_embedded_browser::{SPEmbeddedSiteBrowser, SPEmbeddedSiteBrowserCallbacks, SPEmbeddedSiteBrowserOptions};
 
 use super::app_browser::BRIDGE_SCRIPT;
-use super::browser_window::{BrowserClient, BrowserEvent, BrowserWindow, ContextMenuInfo};
+use super::browser_window::{BrowserClient, BrowserEvent, BrowserWindow, ContextMenuInfo, EditCommand};
 use super::{host_of, is_bungalow_uri, is_web_url, Host};
 
 /// Hosts whose top-level pages may load without asking the host element.
@@ -60,7 +60,6 @@ impl SiteClient {
     /// Keeps CEF's default menu (minus view-source); developer mode adds the
     /// Develop menu command, like the caption bar's.
     fn show_context_menu(&self, window: &BrowserWindow, info: &ContextMenuInfo) {
-        use wef::ContextMenuEditStateFlags as E;
         const BACK: i32 = 1;
         const FORWARD: i32 = 2;
         const RELOAD: i32 = 3;
@@ -72,25 +71,25 @@ impl SiteClient {
 
         let mut items = Vec::new();
         if info.is_editable {
-            if info.edit_flags.contains(E::CAN_CUT) {
+            if info.can_cut {
                 items.push((CUT, "Cut".to_string()));
             }
-            if info.edit_flags.contains(E::CAN_COPY) {
+            if info.can_copy {
                 items.push((COPY, "Copy".to_string()));
             }
-            if info.edit_flags.contains(E::CAN_PASTE) {
+            if info.can_paste {
                 items.push((PASTE, "Paste".to_string()));
             }
-            if info.edit_flags.contains(E::CAN_SELECT_ALL) {
+            if info.can_select_all {
                 items.push((SELECT_ALL, "Select All".to_string()));
             }
         } else if info.has_selection {
             items.push((COPY, "Copy".to_string()));
         } else {
-            if window.with_browser(|b| b.can_back()).unwrap_or(false) {
+            if window.can_go_back() {
                 items.push((BACK, "Back".to_string()));
             }
-            if window.with_browser(|b| b.can_forward()).unwrap_or(false) {
+            if window.can_go_forward() {
                 items.push((FORWARD, "Forward".to_string()));
             }
             items.push((RELOAD, "Reload".to_string()));
@@ -103,15 +102,14 @@ impl SiteClient {
             &items,
             Box::new(move |choice| {
                 let Some(window) = super::find_window(id) else { return };
-                let frame = || window.with_browser(|b| b.focused_frame().or_else(|| b.main_frame())).flatten();
                 match choice {
-                    BACK => _ = window.with_browser(|b| b.back()),
-                    FORWARD => _ = window.with_browser(|b| b.forward()),
+                    BACK => _ = window.go_back(),
+                    FORWARD => window.go_forward(),
                     RELOAD => window.reload(),
-                    CUT => _ = frame().map(|f| f.cut()),
-                    COPY => _ = frame().map(|f| f.copy()),
-                    PASTE => _ = frame().map(|f| f.paste()),
-                    SELECT_ALL => _ = frame().map(|f| f.select_all()),
+                    CUT => window.edit(EditCommand::Cut),
+                    COPY => window.edit(EditCommand::Copy),
+                    PASTE => window.edit(EditCommand::Paste),
+                    SELECT_ALL => window.edit(EditCommand::SelectAll),
                     INSPECT => window.show_dev_tools("Site"),
                     _ => {}
                 }
@@ -136,9 +134,9 @@ impl BrowserClient for SiteClient {
                         cb(&url);
                     }
                 } else {
-                    // CEF cancelled these in OnBeforeBrowse; Wef can only
-                    // notice them, so the page goes back while the host
-                    // element asks for consent.
+                    // The C++ client cancelled these in OnBeforeBrowse; this
+                    // port notices them, so the page goes back while the
+                    // host element asks for consent.
                     window.go_back();
                     self.hand_over(&url);
                 }
@@ -169,13 +167,13 @@ impl BrowserClient for SiteClient {
     }
 }
 
-pub struct WefSiteBrowser {
+pub struct CefSiteBrowser {
     allowed_hosts: Rc<AllowedHosts>,
     host_load_pending: Rc<Cell<bool>>,
     window: Rc<BrowserWindow>,
 }
 
-impl WefSiteBrowser {
+impl CefSiteBrowser {
     pub fn new(
         host: &Rc<Host>,
         options: SPEmbeddedSiteBrowserOptions,
@@ -195,13 +193,13 @@ impl WefSiteBrowser {
     }
 }
 
-impl Drop for WefSiteBrowser {
+impl Drop for CefSiteBrowser {
     fn drop(&mut self) {
         self.window.close();
     }
 }
 
-impl SPEmbeddedSiteBrowser for WefSiteBrowser {
+impl SPEmbeddedSiteBrowser for CefSiteBrowser {
     fn set_bounds(&self, x: i32, y: i32, width: i32, height: i32) {
         self.window.set_bounds(x, y, width, height);
     }

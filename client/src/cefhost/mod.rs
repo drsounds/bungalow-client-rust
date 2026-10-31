@@ -1,13 +1,13 @@
 //! Port of `windows/src/cefhost`: embedded Chromium browsers for app bundles
-//! and web sites, through Wef (offscreen CEF) instead of CEF's native
-//! child windows.
+//! and web sites, through the `cef` crate with offscreen rendering instead
+//! of CEF's native child windows.
 //!
 //! | C++                     | Rust                                   |
 //! |-------------------------|----------------------------------------|
-//! | `CefRuntime`            | [`wef_runtime`]                        |
+//! | `CefRuntime`            | [`cef_runtime`]                        |
 //! | `CefBrowserWindow`      | `browser_window::BrowserWindow`        |
-//! | `CefAppBrowser`         | `app_browser::WefAppBrowser`           |
-//! | `CefSiteBrowser`        | `site_browser::WefSiteBrowser`         |
+//! | `CefAppBrowser`         | `app_browser::CefAppBrowser`           |
+//! | `CefSiteBrowser`        | `site_browser::CefSiteBrowser`         |
 //! | `SpSchemeHandler`       | [`sp_scheme_server`] (loopback HTTP)   |
 //!
 //! The browsers draw into textures that [`paint`] puts at their host
@@ -16,16 +16,16 @@
 
 pub mod sp_scheme_server;
 
-#[cfg(feature = "wef")]
+#[cfg(feature = "cef")]
 mod app_browser;
-#[cfg(feature = "wef")]
+#[cfg(feature = "cef")]
 mod browser_window;
-#[cfg(feature = "wef")]
+#[cfg(feature = "cef")]
+mod cef_runtime;
+#[cfg(feature = "cef")]
 mod site_browser;
-#[cfg(feature = "wef")]
-mod wef_runtime;
 
-#[cfg(feature = "wef")]
+#[cfg(feature = "cef")]
 pub use host::*;
 
 pub fn is_bungalow_uri(uri: &str) -> bool {
@@ -49,32 +49,33 @@ pub fn host_of(url: &str) -> String {
     host.to_ascii_lowercase()
 }
 
-#[cfg(feature = "wef")]
+#[cfg(feature = "cef")]
 mod host {
     use std::cell::{Cell, RefCell};
     use std::rc::{Rc, Weak};
     use std::time::Duration;
 
+    use cef::MouseButtonType;
     use space::sp_app_bundle::SPAppBundle;
     use space::sp_element::ElementRef;
     use space::sp_embedded_browser::{
         self, SPEmbeddedBrowser, SPEmbeddedBrowserBackend, SPEmbeddedBrowserCallbacks, SPEmbeddedBrowserOptions,
         SPEmbeddedSiteBrowser, SPEmbeddedSiteBrowserCallbacks, SPEmbeddedSiteBrowserOptions,
     };
-    use wef::{KeyCode, KeyModifier, LogicalUnit, MouseButton, Point};
 
-    use super::app_browser::WefAppBrowser;
-    use super::browser_window::BrowserWindow;
-    use super::site_browser::WefSiteBrowser;
+    use super::app_browser::CefAppBrowser;
+    use super::browser_window::{self as bw, BrowserWindow};
+    use super::cef_runtime;
+    use super::site_browser::CefSiteBrowser;
     use super::sp_scheme_server::SpSchemeServer;
-    use super::wef_runtime;
 
-    pub use super::wef_runtime::{execute_subprocess, shutdown};
+    pub use super::browser_window::EditCommand;
+    pub use super::cef_runtime::{execute_subprocess, shutdown};
 
     /// Starts CEF. On failure app bundles and sites fall back to the
     /// remote and system-browser paths; the rest of the UI still works.
     pub fn initialize() {
-        wef_runtime::initialize();
+        cef_runtime::initialize();
     }
 
     const DOUBLE_CLICK_TIME: f64 = 0.5;
@@ -97,6 +98,8 @@ mod host {
         focused: Cell<Option<u64>>,
         /// The window that got the last mouse-down gets the mouse-up too.
         captured: Cell<Option<u64>>,
+        /// Event flag of the button held over the captured window.
+        held_button: Cell<u32>,
         hovered: Cell<Option<u64>>,
         last_click: RefCell<Option<LastClick>>,
     }
@@ -127,7 +130,7 @@ mod host {
         }
 
         /// The topmost visible window under pos (the last one created wins).
-        fn window_at(&self, pos: egui::Pos2) -> Option<(Rc<BrowserWindow>, Point<LogicalUnit<i32>>)> {
+        fn window_at(&self, pos: egui::Pos2) -> Option<(Rc<BrowserWindow>, (i32, i32))> {
             self.live_windows().into_iter().rev().find_map(|w| w.to_view(pos).map(|p| (w, p)))
         }
 
@@ -137,10 +140,10 @@ mod host {
                 return;
             }
             if let Some(previous) = self.window(self.focused.get()) {
-                previous.with_browser(|b| b.set_focus(false));
+                previous.set_focus(false);
             }
             if let Some(window) = window {
-                window.with_browser(|b| b.set_focus(true));
+                window.set_focus(true);
             }
             self.focused.set(id);
         }
@@ -180,12 +183,12 @@ mod host {
         host()?.window(Some(id))
     }
 
-    /// `createEmbeddedAppBrowser` / `createEmbeddedSiteBrowser` for Wef.
-    struct WefBackend {
+    /// `createEmbeddedAppBrowser` / `createEmbeddedSiteBrowser` for CEF.
+    struct CefBackend {
         host: Rc<Host>,
     }
 
-    impl SPEmbeddedBrowserBackend for WefBackend {
+    impl SPEmbeddedBrowserBackend for CefBackend {
         fn create_app_browser(
             &self,
             bundle: &SPAppBundle,
@@ -193,10 +196,10 @@ mod host {
             options: SPEmbeddedBrowserOptions,
             callbacks: SPEmbeddedBrowserCallbacks,
         ) -> Option<Box<dyn SPEmbeddedBrowser>> {
-            if !wef_runtime::is_initialized() {
+            if !cef_runtime::is_initialized() {
                 return None;
             }
-            Some(Box::new(WefAppBrowser::new(&self.host, bundle, options, callbacks)))
+            Some(Box::new(CefAppBrowser::new(&self.host, bundle, options, callbacks)))
         }
 
         fn create_site_browser(
@@ -205,18 +208,19 @@ mod host {
             options: SPEmbeddedSiteBrowserOptions,
             callbacks: SPEmbeddedSiteBrowserCallbacks,
         ) -> Option<Box<dyn SPEmbeddedSiteBrowser>> {
-            if !wef_runtime::is_initialized() {
+            if !cef_runtime::is_initialized() {
                 return None;
             }
-            Some(Box::new(WefSiteBrowser::new(&self.host, options, callbacks)))
+            Some(Box::new(CefSiteBrowser::new(&self.host, options, callbacks)))
         }
     }
 
     /// Makes the embedded browsers available to the views, if CEF started.
     pub fn register_backend(ctx: &egui::Context) {
-        if !wef_runtime::is_initialized() {
+        if !cef_runtime::is_initialized() {
             return;
         }
+        cef_runtime::set_pump_context(ctx);
         let server = match SpSchemeServer::start() {
             Ok(server) => server,
             Err(e) => {
@@ -231,27 +235,28 @@ mod host {
             next_id: Cell::new(0),
             focused: Cell::new(None),
             captured: Cell::new(None),
+            held_button: Cell::new(0),
             hovered: Cell::new(None),
             last_click: RefCell::new(None),
         });
         HOST.with(|h| *h.borrow_mut() = Some(host.clone()));
-        sp_embedded_browser::set_backend(Some(Rc::new(WefBackend { host })));
+        sp_embedded_browser::set_backend(Some(Rc::new(CefBackend { host })));
     }
 
     /// Runs CEF work and delivers browser events to the views. Call once
     /// per frame.
     pub fn pump() {
-        if !wef_runtime::is_initialized() {
+        if !cef_runtime::is_initialized() {
             return;
         }
-        wef_runtime::do_message_loop_work();
+        cef_runtime::do_message_loop_work();
         let Some(host) = host() else { return };
         let windows = host.live_windows();
         for window in &windows {
             window.dispatch_events();
         }
-        // CEF schedules its work on a message pump the frame loop has to
-        // drive, so keep frames coming while browsers are alive.
+        // CEF asks for frames when it schedules work, but keep them coming
+        // while browsers are alive in case a request was missed.
         let delay = if windows.iter().any(|w| w.is_visible()) {
             Duration::from_millis(16)
         } else if !windows.is_empty() {
@@ -292,7 +297,7 @@ mod host {
             if let (true, Some(popup), Some(rect)) = (surface.popup_visible, &surface.popup, surface.popup_rect) {
                 let rect = rect.translate(bounds.min.to_vec2());
                 ui.ctx()
-                    .layer_painter(egui::LayerId::new(egui::Order::Middle, egui::Id::new(("wef-popup", window.id))))
+                    .layer_painter(egui::LayerId::new(egui::Order::Middle, egui::Id::new(("cef-popup", window.id))))
                     .image(popup.id(), rect, uv, egui::Color32::WHITE);
             }
             if pointer.is_some_and(|p| bounds.contains(p)) {
@@ -301,16 +306,23 @@ mod host {
         }
     }
 
-    fn key_modifier(modifiers: egui::Modifiers) -> KeyModifier {
-        let mut result = KeyModifier::empty();
-        result.set(KeyModifier::SHIFT, modifiers.shift);
-        result.set(KeyModifier::CONTROL, modifiers.ctrl || modifiers.mac_cmd);
-        result.set(KeyModifier::ALT, modifiers.alt);
-        result
+    /// CEF event flags for the keyboard modifiers.
+    fn key_modifier(modifiers: egui::Modifiers) -> u32 {
+        let mut flags = 0;
+        if modifiers.shift {
+            flags |= bw::SHIFT_DOWN;
+        }
+        if modifiers.ctrl || modifiers.mac_cmd {
+            flags |= bw::CONTROL_DOWN;
+        }
+        if modifiers.alt {
+            flags |= bw::ALT_DOWN;
+        }
+        flags
     }
 
-    fn current_modifiers(host: &Host) -> KeyModifier {
-        key_modifier(host.ctx.input(|i| i.modifiers))
+    fn current_modifiers(host: &Host) -> u32 {
+        key_modifier(host.ctx.input(|i| i.modifiers)) | host.held_button.get()
     }
 
     /// Returns true if a browser took the pointer move.
@@ -318,23 +330,20 @@ mod host {
         let Some(host) = host() else { return false };
         let modifiers = current_modifiers(&host);
         if let Some(window) = host.window(host.captured.get()) {
-            window.with_browser(|b| b.send_mouse_move_event(window.to_view_unchecked(pos), modifiers));
+            window.send_mouse_move(window.to_view_unchecked(pos), modifiers, false);
             return true;
         }
         let target = host.window_at(pos);
         let target_id = target.as_ref().map(|(w, _)| w.id);
         if host.hovered.get() != target_id {
-            // Wef has no mouse-leave event: a move outside the view clears
-            // hover state in the page.
             if let Some(previous) = host.window(host.hovered.get()) {
-                previous
-                    .with_browser(|b| b.send_mouse_move_event(Point::new(LogicalUnit(-1), LogicalUnit(-1)), modifiers));
+                previous.send_mouse_move(previous.to_view_unchecked(pos), modifiers, true);
             }
             host.hovered.set(target_id);
         }
         match target {
             Some((window, point)) => {
-                window.with_browser(|b| b.send_mouse_move_event(point, modifiers));
+                window.send_mouse_move(point, modifiers, false);
                 true
             }
             None => false,
@@ -345,12 +354,12 @@ mod host {
     /// true if a browser took the click.
     pub fn pointer_button(pos: egui::Pos2, button: i32, pressed: bool, modifiers: egui::Modifiers) -> bool {
         let Some(host) = host() else { return false };
-        let mouse_button = match button {
-            0 => MouseButton::Left,
-            1 => MouseButton::Right,
-            _ => MouseButton::Middle,
+        let (button_type, button_flag) = match button {
+            0 => (MouseButtonType::LEFT, bw::LEFT_MOUSE_BUTTON),
+            1 => (MouseButtonType::RIGHT, bw::RIGHT_MOUSE_BUTTON),
+            _ => (MouseButtonType::MIDDLE, bw::MIDDLE_MOUSE_BUTTON),
         };
-        let modifiers = key_modifier(modifiers);
+        let modifiers = key_modifier(modifiers) | button_flag;
         if pressed {
             let Some((window, point)) = host.window_at(pos) else {
                 host.focus(None);
@@ -358,20 +367,19 @@ mod host {
             };
             host.focus(Some(&window));
             host.captured.set(Some(window.id));
+            host.held_button.set(button_flag);
             let count = host.click_count(window.id, button, pos);
-            window.with_browser(|b| {
-                b.send_mouse_move_event(point, modifiers);
-                b.send_mouse_click_event(mouse_button, false, count, modifiers);
-            });
+            window.send_mouse_move(point, modifiers, false);
+            window.send_mouse_click(point, button_type, false, count, modifiers);
             true
         } else {
+            host.held_button.set(0);
             let window = host.window(host.captured.take()).or_else(|| host.window_at(pos).map(|(w, _)| w));
             let Some(window) = window else { return false };
             let count = host.last_click.borrow().as_ref().map_or(1, |l| l.count);
-            window.with_browser(|b| {
-                b.send_mouse_move_event(window.to_view_unchecked(pos), modifiers);
-                b.send_mouse_click_event(mouse_button, true, count, modifiers);
-            });
+            let point = window.to_view_unchecked(pos);
+            window.send_mouse_move(point, modifiers, false);
+            window.send_mouse_click(point, button_type, true, count, modifiers);
             true
         }
     }
@@ -382,54 +390,51 @@ mod host {
         let Some(host) = host() else { return false };
         let Some((window, point)) = host.window_at(pos) else { return false };
         let modifiers = current_modifiers(&host);
-        window.with_browser(|b| {
-            b.send_mouse_move_event(point, modifiers);
-            b.send_mouse_wheel_event(Point::new(
-                LogicalUnit(delta.x.round() as i32),
-                LogicalUnit(delta.y.round() as i32),
-            ));
-        });
+        window.send_mouse_move(point, modifiers, false);
+        window.send_mouse_wheel(point, (delta.x.round() as i32, delta.y.round() as i32), modifiers);
         true
     }
 
-    fn key_code(key: egui::Key) -> Option<KeyCode> {
+    /// The Windows virtual-key code CEF expects for an editing or
+    /// navigation key.
+    fn key_code(key: egui::Key) -> Option<i32> {
         use egui::Key;
         Some(match key {
-            Key::Backspace => KeyCode::Backspace,
-            Key::Delete => KeyCode::Delete,
-            Key::Tab => KeyCode::Tab,
-            Key::Enter => KeyCode::Enter,
-            Key::PageUp => KeyCode::PageUp,
-            Key::PageDown => KeyCode::PageDown,
-            Key::End => KeyCode::End,
-            Key::Home => KeyCode::Home,
-            Key::ArrowLeft => KeyCode::ArrowLeft,
-            Key::ArrowUp => KeyCode::ArrowUp,
-            Key::ArrowRight => KeyCode::ArrowRight,
-            Key::ArrowDown => KeyCode::ArrowDown,
+            Key::Backspace => 0x08,
+            Key::Tab => 0x09,
+            Key::Enter => 0x0D,
+            Key::Escape => 0x1B,
+            Key::PageUp => 0x21,
+            Key::PageDown => 0x22,
+            Key::End => 0x23,
+            Key::Home => 0x24,
+            Key::ArrowLeft => 0x25,
+            Key::ArrowUp => 0x26,
+            Key::ArrowRight => 0x27,
+            Key::ArrowDown => 0x28,
+            Key::Delete => 0x2E,
             _ => return None,
         })
     }
 
-    /// Returns true if the focused browser took the key. Wef only forwards
-    /// editing and navigation keys; text arrives through [`text`], and the
-    /// editing shortcuts are mapped to frame commands.
+    /// Returns true if the focused browser took the key. Only editing and
+    /// navigation keys are forwarded; text arrives through [`text`], and
+    /// the editing shortcuts are mapped to frame commands.
     pub fn key(key: egui::Key, pressed: bool, modifiers: egui::Modifiers) -> bool {
         let Some(host) = host() else { return false };
         let Some(window) = host.focused_window() else { return false };
         if pressed && modifiers.command {
-            let frame = window.with_browser(|b| b.focused_frame().or_else(|| b.main_frame())).flatten();
             match (key, modifiers.shift) {
-                (egui::Key::A, _) => _ = frame.map(|f| f.select_all()),
-                (egui::Key::Z, false) => _ = frame.map(|f| f.undo()),
-                (egui::Key::Z, true) | (egui::Key::Y, _) => _ = frame.map(|f| f.redo()),
+                (egui::Key::A, _) => window.edit(EditCommand::SelectAll),
+                (egui::Key::Z, false) => window.edit(EditCommand::Undo),
+                (egui::Key::Z, true) | (egui::Key::Y, _) => window.edit(EditCommand::Redo),
                 (egui::Key::R, _) => window.reload(),
                 _ => {}
             }
             return true;
         }
         if let Some(code) = key_code(key) {
-            window.with_browser(|b| b.send_key_event(pressed, code, key_modifier(modifiers)));
+            window.send_key(pressed, code, key_modifier(modifiers));
         }
         true
     }
@@ -438,17 +443,10 @@ mod host {
     pub fn text(text: &str) {
         let Some(host) = host() else { return };
         let Some(window) = host.focused_window() else { return };
-        window.with_browser(|b| {
-            for unit in text.encode_utf16() {
-                b.send_char_event(unit);
-            }
-        });
-    }
-
-    pub enum EditCommand {
-        Cut,
-        Copy,
-        Paste,
+        let modifiers = key_modifier(host.ctx.input(|i| i.modifiers));
+        for unit in text.encode_utf16() {
+            window.send_char(unit, modifiers);
+        }
     }
 
     /// Clipboard shortcuts (egui turns Ctrl+X/C/V into these). CEF reads and
@@ -456,14 +454,7 @@ mod host {
     pub fn edit_command(command: EditCommand) -> bool {
         let Some(host) = host() else { return false };
         let Some(window) = host.focused_window() else { return false };
-        let Some(frame) = window.with_browser(|b| b.focused_frame().or_else(|| b.main_frame())).flatten() else {
-            return true;
-        };
-        match command {
-            EditCommand::Cut => frame.cut(),
-            EditCommand::Copy => frame.copy(),
-            EditCommand::Paste => frame.paste(),
-        }
+        window.edit(command);
         true
     }
 
@@ -478,7 +469,7 @@ mod host {
         }
         // Let CEF finish closing them.
         for _ in 0..20 {
-            wef_runtime::do_message_loop_work();
+            cef_runtime::do_message_loop_work();
             std::thread::sleep(Duration::from_millis(10));
         }
     }

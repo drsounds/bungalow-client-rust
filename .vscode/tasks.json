@@ -11,10 +11,10 @@
             "group": { "kind": "build", "isDefault": true }
         },
         {
-            "label": "cargo build (debug, wef, audio)",
+            "label": "cargo build (debug, cef, audio)",
             "type": "shell",
             "command": "cargo",
-            "args": ["build", "-p", "bungalow-client", "--features", "wef,audio"],
+            "args": ["build", "-p", "bungalow-client", "--features", "cef,audio"],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": ["$rustc"],
             "group": "build"

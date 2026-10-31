@@ -13,7 +13,7 @@
 //! SPSwimmingAppElement), likewise one per app and kept alive.
 //!
 //! With an embedded browser backend (the C++ `BUNGALOW_CEF` build; here the
-//! `wef` feature), other installed bundles that contain an index.html run
+//! `cef` feature), other installed bundles that contain an index.html run
 //! locally in an embedded browser (one per app, kept alive while switching),
 //! served from the app's own origin. bungalow:app:<app_id>:a:b maps to the
 //! in-app route /a/b. Unknown app ids show an error view.

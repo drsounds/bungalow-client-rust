@@ -1,7 +1,7 @@
 //! Port of the Win32 `SiteView` (windows/): the Space-rendered navigation
 //! bar, URI mapping, third-party-domain consent and download detection.
 //!
-//! With an embedded browser backend (the `wef` feature), pages are shown in
+//! With an embedded browser backend (the `cef` feature), pages are shown in
 //! an embedded browser below the nav bar; in-page navigations become view
 //! stack history entries, and pages on hosts the user has not accepted yet
 //! go through the third-party consent first. Without one (or if the browser
