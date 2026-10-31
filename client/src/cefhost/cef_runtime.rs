@@ -1,9 +1,10 @@
 //! Port of `CefRuntime`: process-wide Chromium lifetime, through the `cef`
 //! crate.
 //!
-//! The same [`BungalowApp`] serves every process: in the browser process it
-//! schedules CEF's external message pump on the frame loop, in renderers it
-//! installs `window.jsBridge`, the page side of `window.bungalow.navigate`.
+//! The same [`BungalowApp`] serves every process: it registers the `sp://`
+//! scheme everywhere, in the browser process it schedules CEF's external
+//! message pump on the frame loop, and in renderers it installs
+//! `window.jsBridge`, the page side of `window.bungalow.navigate`.
 
 use std::cell::Cell;
 use std::os::raw::c_int;
@@ -13,6 +14,8 @@ use std::time::Duration;
 
 use cef::args::Args;
 use cef::*;
+
+use super::sp_scheme_handler;
 
 /// The renderer -> browser process message `jsBridge.navigate(uri)` sends.
 pub const NAVIGATE_MESSAGE: &str = "bungalow.navigate";
@@ -51,6 +54,13 @@ wrap_app! {
             }
             #[cfg(target_os = "macos")]
             command_line.append_switch(Some(&"use-mock-keychain".into()));
+        }
+
+        /// `sp://` for app bundles, in every process.
+        fn on_register_custom_schemes(&self, registrar: Option<&mut SchemeRegistrar>) {
+            if let Some(registrar) = registrar {
+                sp_scheme_handler::register_scheme(registrar);
+            }
         }
 
         fn browser_process_handler(&self) -> Option<BrowserProcessHandler> {

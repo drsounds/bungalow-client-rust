@@ -27,14 +27,9 @@
     // web server with the bundles side by side: /import/, /timemachine/),
     // sp://<bundle>/x is fetched from <origin>/<bundle>/x instead.
     var hosted = global.location.protocol === "sp:";
-    // The Rust host's Wef backend has no custom schemes: it serves
-    // sp://<bundle>/x from http://<bundle>.localhost:<port>/x instead.
-    var localhostHosted = !hosted && !!global.__bungalowBridge &&
-        /\.localhost$/i.test(global.location.hostname);
 
     function appId() {
         if (hosted) return global.location.host;
-        if (localhostHosted) return global.location.hostname.replace(/\.localhost$/i, "");
         return global.location.pathname.split("/")[1] || "";
     }
 
@@ -46,23 +41,16 @@
     // http://localhost/timemachine/year/1990/2000 (dev mode).
     function route() {
         var path = global.location.pathname;
-        if (!hosted && !localhostHosted) path = path.slice(appId().length + 1) || "/";
+        if (!hosted) path = path.slice(appId().length + 1) || "/";
         return path.replace(/\/index\.html?$/i, "/");
     }
 
     function routeToUrl(path) {
-        return (hosted || localhostHosted ? "" : "/" + appId()) + "/" + String(path).replace(/^\/+/, "");
+        return (hosted ? "" : "/" + appId()) + "/" + String(path).replace(/^\/+/, "");
     }
 
     function toFetchUrl(url) {
         if (hosted || url.indexOf("sp://") !== 0) return url;
-        if (localhostHosted) {
-            var rest = url.slice("sp://".length);
-            var slash = rest.indexOf("/");
-            var bundle = slash < 0 ? rest : rest.slice(0, slash);
-            var port = global.location.port ? ":" + global.location.port : "";
-            return global.location.protocol + "//" + bundle + ".localhost" + port + (slash < 0 ? "/" : rest.slice(slash));
-        }
         return global.location.origin + "/" + url.slice("sp://".length);
     }
 
@@ -136,7 +124,7 @@
         language: (global.navigator && global.navigator.language || "en").split("-")[0],
         country: "SE",
         product: "Bungalow",
-        hosted: hosted || localhostHosted,
+        hosted: hosted,
         getAppRoot: appRoot,
         getRoute: route,
         routeToUrl: routeToUrl,

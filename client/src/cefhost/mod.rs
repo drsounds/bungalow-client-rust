@@ -8,13 +8,13 @@
 //! | `CefBrowserWindow`      | `browser_window::BrowserWindow`        |
 //! | `CefAppBrowser`         | `app_browser::CefAppBrowser`           |
 //! | `CefSiteBrowser`        | `site_browser::CefSiteBrowser`         |
-//! | `SpSchemeHandler`       | [`sp_scheme_server`] (loopback HTTP)   |
+//! | `SpSchemeHandler`       | [`sp_scheme_handler`]                  |
 //!
 //! The browsers draw into textures that [`paint`] puts at their host
 //! elements' bounds, and the main window routes input over those bounds
 //! here ([`pointer_moved`], [`pointer_button`], [`key`], ...).
 
-pub mod sp_scheme_server;
+pub mod sp_scheme_handler;
 
 #[cfg(feature = "cef")]
 mod app_browser;
@@ -67,7 +67,7 @@ mod host {
     use super::browser_window::{self as bw, BrowserWindow};
     use super::cef_runtime;
     use super::site_browser::CefSiteBrowser;
-    use super::sp_scheme_server::SpSchemeServer;
+    use super::sp_scheme_handler::SpSchemeHandler;
 
     pub use super::browser_window::EditCommand;
     pub use super::cef_runtime::{execute_subprocess, shutdown};
@@ -92,7 +92,7 @@ mod host {
     /// Every live browser window and the input state shared between them.
     pub struct Host {
         ctx: egui::Context,
-        pub(super) server: SpSchemeServer,
+        pub(super) scheme_handler: SpSchemeHandler,
         windows: RefCell<Vec<Weak<BrowserWindow>>>,
         next_id: Cell<u64>,
         focused: Cell<Option<u64>>,
@@ -221,16 +221,14 @@ mod host {
             return;
         }
         cef_runtime::set_pump_context(ctx);
-        let server = match SpSchemeServer::start() {
-            Ok(server) => server,
-            Err(e) => {
-                log::error!("Cannot serve app bundles: {e}");
-                return;
-            }
-        };
+        let scheme_handler = SpSchemeHandler::new();
+        if !scheme_handler.register() {
+            log::error!("Cannot serve app bundles: the sp:// scheme handler was refused");
+            return;
+        }
         let host = Rc::new(Host {
             ctx: ctx.clone(),
-            server,
+            scheme_handler,
             windows: RefCell::default(),
             next_id: Cell::new(0),
             focused: Cell::new(None),
@@ -292,8 +290,10 @@ mod host {
                         egui::Color32::WHITE,
                     );
                 }
-                None => painter.rect_filled(bounds, 0.0, egui::Color32::WHITE),
-            };
+                None => {
+                    painter.rect_filled(bounds, 0.0, egui::Color32::WHITE);
+                }
+            }
             if let (true, Some(popup), Some(rect)) = (surface.popup_visible, &surface.popup, surface.popup_rect) {
                 let rect = rect.translate(bounds.min.to_vec2());
                 ui.ctx()

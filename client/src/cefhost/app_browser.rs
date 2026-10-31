@@ -1,8 +1,7 @@
 //! Port of `CefAppBrowser`: one HTML5 app bundle in an offscreen browser.
 //!
-//! The bundle is served at `http://<app>.localhost:<port>/` (the stand-in for
-//! `sp://<app>/`, see [`super::sp_scheme_server`]), and the shared API
-//! bundle at the `import` origin.
+//! The bundle is served at `sp://<app>/` (see [`super::sp_scheme_handler`]),
+//! and the shared API bundle at `sp://import/`.
 
 use std::collections::BTreeSet;
 use std::rc::Rc;
@@ -15,7 +14,7 @@ use space::sp_embedded_browser::{
 };
 
 use super::browser_window::{BrowserClient, BrowserEvent, BrowserWindow};
-use super::sp_scheme_server::Mount;
+use super::sp_scheme_handler::Mount;
 use super::{is_bungalow_uri, is_web_url, Host};
 
 /// Defines `window.navigate(path)` for apps that do not bring their own (the
@@ -58,7 +57,7 @@ struct AppClient {
 }
 
 impl AppClient {
-    /// http://app.localhost:1/a/b?x#y -> "/a/b"; None outside the bundle.
+    /// sp://app/a/b?x#y -> "/a/b"; None outside the bundle.
     fn route_of(&self, url: &str) -> Option<String> {
         let rest = url.strip_prefix(&self.origin)?;
         let path = rest.split(['?', '#']).next().unwrap_or_default();
@@ -80,23 +79,19 @@ impl AppClient {
 }
 
 impl BrowserClient for AppClient {
+    /// The app stays inside its bundle.
+    fn allow_navigation(&self, url: &str, _is_redirect: bool) -> bool {
+        self.route_of(url).is_some()
+    }
+
     fn on_event(&self, window: &BrowserWindow, event: BrowserEvent) {
         match event {
-            BrowserEvent::AddressChanged { url, main_frame: true } => match self.route_of(&url) {
-                Some(route) => {
-                    if let Some(cb) = &self.callbacks.route_changed {
-                        cb(&route);
-                    }
+            BrowserEvent::AddressChanged { url, main_frame: true } => {
+                if let (Some(route), Some(cb)) = (self.route_of(&url), &self.callbacks.route_changed) {
+                    cb(&route);
                 }
-                None => {
-                    // The C++ client cancelled these in OnBeforeBrowse; this
-                    // port notices them, so the page is taken back to the app.
-                    self.leave_bundle(&url);
-                    if !window.go_back() {
-                        window.load(&self.origin);
-                    }
-                }
-            },
+            }
+            BrowserEvent::NavigationBlocked(url) => self.leave_bundle(&url),
             BrowserEvent::TitleChanged(title) => {
                 if let Some(cb) = &self.callbacks.title_changed {
                     cb(&title);
@@ -168,10 +163,10 @@ impl CefAppBrowser {
     ) -> Self {
         // Hosts are canonicalized to lower case.
         let app_id = bundle.identifier.to_ascii_lowercase();
-        let origin = host.server.origin(&app_id);
-        let shared_origin = host.server.origin(SHARED_API_BUNDLE);
+        let origin = host.scheme_handler.origin(&app_id);
+        let shared_origin = host.scheme_handler.origin(SHARED_API_BUNDLE);
 
-        host.server.mount(
+        host.scheme_handler.mount(
             &app_id,
             Mount {
                 bundle_root: bundle.path.clone(),
@@ -180,10 +175,10 @@ impl CefAppBrowser {
                 content_security_policy: Some(content_security_policy(&shared_origin, &options.allowed_hosts)),
             },
         );
-        if app_id != SHARED_API_BUNDLE && !host.server.is_mounted(SHARED_API_BUNDLE) {
+        if app_id != SHARED_API_BUNDLE && !host.scheme_handler.is_mounted(SHARED_API_BUNDLE) {
             let shared_root = SPAppManager::with(|m| m.find_bundle(SHARED_API_BUNDLE).map(|b| b.path.clone()));
             if let Some(root) = shared_root {
-                host.server.mount(
+                host.scheme_handler.mount(
                     SHARED_API_BUNDLE,
                     Mount { bundle_root: root, allow_any_origin: true, ..Default::default() },
                 );
@@ -201,7 +196,7 @@ impl Drop for CefAppBrowser {
         self.window.close();
         // Other browsers of the same app keep the bundle mounted.
         if !self.host.has_window_named(&self.app_id, self.window.id) && self.app_id != SHARED_API_BUNDLE {
-            self.host.server.unmount(&self.app_id);
+            self.host.scheme_handler.unmount(&self.app_id);
         }
     }
 }
@@ -255,18 +250,22 @@ mod tests {
 
     #[test]
     fn routes_stay_inside_the_bundle() {
-        let client = AppClient { origin: "http://app.localhost:9/".into(), callbacks: Default::default() };
-        assert_eq!(client.route_of("http://app.localhost:9/a/b?x#y").as_deref(), Some("/a/b"));
-        assert_eq!(client.route_of("http://app.localhost:9/index.html").as_deref(), Some("/"));
-        assert_eq!(client.route_of("http://app.localhost:9/").as_deref(), Some("/"));
-        assert_eq!(client.route_of("http://other.localhost:9/a"), None);
+        let client = AppClient { origin: "sp://app/".into(), callbacks: Default::default() };
+        assert_eq!(client.route_of("sp://app/a/b?x#y").as_deref(), Some("/a/b"));
+        assert_eq!(client.route_of("sp://app/index.html").as_deref(), Some("/"));
+        assert_eq!(client.route_of("sp://app/").as_deref(), Some("/"));
+        assert_eq!(client.route_of("sp://other/a"), None);
+        assert_eq!(client.route_of("sp://application/a"), None);
+        assert!(client.allow_navigation("sp://app/x", false));
+        assert!(!client.allow_navigation("https://example.com/", false));
+        assert!(!client.allow_navigation("bungalow:app:other", false));
     }
 
     #[test]
     fn policy_allows_hosts_and_subdomains() {
         let hosts = BTreeSet::from(["api.example.com".to_string()]);
-        let csp = content_security_policy("http://import.localhost:9/", &hosts);
-        assert!(csp.starts_with("default-src 'self' http://import.localhost:9 data: blob:"));
+        let csp = content_security_policy("sp://import/", &hosts);
+        assert!(csp.starts_with("default-src 'self' sp://import data: blob:"));
         assert!(csp.contains("https://*.api.example.com"));
         assert!(csp.contains("wss://api.example.com"));
     }

@@ -44,6 +44,8 @@ pub enum BrowserEvent {
     TitleChanged(String),
     /// A new window was requested; it was already blocked.
     PopupRequested(String),
+    /// [`BrowserClient::allow_navigation`] refused a top-level navigation.
+    NavigationBlocked(String),
     LoadStart {
         url: String,
         main_frame: bool,
@@ -100,6 +102,12 @@ pub enum EditCommand {
 /// The app- or site-specific side of a browser (the C++ `AppClient` and
 /// `SiteClient`).
 pub trait BrowserClient {
+    /// Decides whether a top-level navigation may go ahead (the C++
+    /// `OnBeforeBrowse`). CEF waits for the answer, so this must not call
+    /// back into the host: a refused navigation arrives afterwards as
+    /// [`BrowserEvent::NavigationBlocked`].
+    fn allow_navigation(&self, url: &str, is_redirect: bool) -> bool;
+
     fn on_event(&self, window: &BrowserWindow, event: BrowserEvent);
 }
 
@@ -119,6 +127,7 @@ pub struct Surface {
 struct Shared {
     ctx: egui::Context,
     name: String,
+    client: RefCell<Option<Rc<dyn BrowserClient>>>,
     surface: RefCell<Surface>,
     events: RefCell<VecDeque<BrowserEvent>>,
     /// Physical view size and device scale last given to the browser.
@@ -130,6 +139,11 @@ impl Shared {
     fn push(&self, event: BrowserEvent) {
         self.events.borrow_mut().push_back(event);
         self.ctx.request_repaint();
+    }
+
+    /// A closed window (no client) navigates nowhere.
+    fn allows_navigation(&self, url: &str, is_redirect: bool) -> bool {
+        self.client.borrow().as_ref().is_some_and(|c| c.allow_navigation(url, is_redirect))
     }
 }
 
@@ -279,6 +293,49 @@ wrap_life_span_handler! {
     }
 }
 
+wrap_request_handler! {
+    struct ViewRequests {
+        shared: Rc<Shared>,
+    }
+
+    impl RequestHandler {
+        /// Top-level navigations the client refuses never start; frames
+        /// inside the page are left to its Content-Security-Policy.
+        fn on_before_browse(
+            &self,
+            _browser: Option<&mut Browser>,
+            frame: Option<&mut Frame>,
+            request: Option<&mut Request>,
+            _user_gesture: c_int,
+            is_redirect: c_int,
+        ) -> c_int {
+            if !frame.is_some_and(|f| f.is_main() != 0) {
+                return 0;
+            }
+            let url = request.map(|r| CefString::from(&r.url()).to_string()).unwrap_or_default();
+            if self.shared.allows_navigation(&url, is_redirect != 0) {
+                return 0;
+            }
+            self.shared.push(BrowserEvent::NavigationBlocked(url));
+            1
+        }
+
+        /// Middle clicks and Ctrl+clicks ask for a new tab: there are none,
+        /// so they go to the client like other new windows.
+        fn on_open_urlfrom_tab(
+            &self,
+            _browser: Option<&mut Browser>,
+            _frame: Option<&mut Frame>,
+            target_url: Option<&CefString>,
+            _target_disposition: WindowOpenDisposition,
+            _user_gesture: c_int,
+        ) -> c_int {
+            self.shared.push(BrowserEvent::PopupRequested(target_url.map(CefString::to_string).unwrap_or_default()));
+            1
+        }
+    }
+}
+
 wrap_load_handler! {
     struct ViewLoad {
         shared: Rc<Shared>,
@@ -365,6 +422,10 @@ wrap_client! {
             Some(ViewLoad::new(self.shared.clone()))
         }
 
+        fn request_handler(&self) -> Option<RequestHandler> {
+            Some(ViewRequests::new(self.shared.clone()))
+        }
+
         fn context_menu_handler(&self) -> Option<ContextMenuHandler> {
             Some(ViewContextMenu::new(self.shared.clone()))
         }
@@ -443,7 +504,6 @@ pub struct BrowserWindow {
     pub id: u64,
     shared: Rc<Shared>,
     browser: RefCell<Option<Browser>>,
-    client: RefCell<Option<Rc<dyn BrowserClient>>>,
     /// Window-relative bounds in points.
     bounds: Cell<egui::Rect>,
     visible: Cell<bool>,
@@ -458,13 +518,13 @@ impl BrowserWindow {
             shared: Rc::new(Shared {
                 ctx: ctx.clone(),
                 name: name.to_string(),
+                client: RefCell::new(None),
                 surface: RefCell::default(),
                 events: RefCell::default(),
                 size: Cell::new((0, 0)),
                 scale: Cell::new(ctx.pixels_per_point()),
             }),
             browser: RefCell::new(None),
-            client: RefCell::new(None),
             bounds: Cell::new(egui::Rect::NOTHING),
             visible: Cell::new(false),
             dark_color_scheme: Cell::new(dark_color_scheme),
@@ -477,7 +537,7 @@ impl BrowserWindow {
     }
 
     pub fn set_client(&self, client: Rc<dyn BrowserClient>) {
-        *self.client.borrow_mut() = Some(client);
+        *self.shared.client.borrow_mut() = Some(client);
     }
 
     pub fn is_running(&self) -> bool {
@@ -729,7 +789,7 @@ impl BrowserWindow {
 
     /// Delivers queued events to the client.
     pub fn dispatch_events(&self) {
-        let client = self.client.borrow().clone();
+        let client = self.shared.client.borrow().clone();
         loop {
             let event = self.shared.events.borrow_mut().pop_front();
             let Some(event) = event else { break };
@@ -767,7 +827,7 @@ impl BrowserWindow {
     /// Force-closes the browser.
     pub fn close(&self) {
         self.closed.set(true);
-        self.client.borrow_mut().take();
+        self.shared.client.borrow_mut().take();
         if let Some(host) = self.browser.borrow_mut().take().and_then(|b| b.host()) {
             host.close_browser(1);
         }

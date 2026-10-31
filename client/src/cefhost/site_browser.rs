@@ -38,8 +38,8 @@ struct SiteClient {
     developer_mode: bool,
     startup_script: String,
     allowed_hosts: Rc<AllowedHosts>,
-    /// Set by load_url() until that load ends: address changes meanwhile are
-    /// its redirects, which CEF never filtered.
+    /// Set by load_url() until that load ends: redirects meanwhile are the
+    /// host's load, which the C++ client never filtered.
     host_load_pending: Rc<Cell<bool>>,
     callbacks: SPEmbeddedSiteBrowserCallbacks,
 }
@@ -119,28 +119,28 @@ impl SiteClient {
 }
 
 impl BrowserClient for SiteClient {
+    /// Web pages on allowed hosts. Redirects of a page the host loaded
+    /// allow their host too; anything else goes to the host element, which
+    /// asks for consent.
+    fn allow_navigation(&self, url: &str, is_redirect: bool) -> bool {
+        if !is_web_url(url) {
+            return false;
+        }
+        let host = host_of(url);
+        if is_redirect && self.host_load_pending.get() {
+            self.allowed_hosts.add(&host);
+        }
+        self.allowed_hosts.contains(&host)
+    }
+
     fn on_event(&self, window: &BrowserWindow, event: BrowserEvent) {
         match event {
             BrowserEvent::AddressChanged { url, main_frame: true } => {
-                if !is_web_url(&url) {
-                    return;
-                }
-                let host = host_of(&url);
-                if self.host_load_pending.get() {
-                    self.allowed_hosts.add(&host);
-                }
-                if self.allowed_hosts.contains(&host) {
-                    if let Some(cb) = &self.callbacks.address_changed {
-                        cb(&url);
-                    }
-                } else {
-                    // The C++ client cancelled these in OnBeforeBrowse; this
-                    // port notices them, so the page goes back while the
-                    // host element asks for consent.
-                    window.go_back();
-                    self.hand_over(&url);
+                if let (true, Some(cb)) = (is_web_url(&url), &self.callbacks.address_changed) {
+                    cb(&url);
                 }
             }
+            BrowserEvent::NavigationBlocked(url) => self.hand_over(&url),
             BrowserEvent::LoadStart { main_frame: true, .. } => {
                 if !self.startup_script.is_empty() {
                     window.execute_script(&self.startup_script);

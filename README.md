@@ -46,7 +46,7 @@ The rest of `windows/` maps to `client/src`:
 | `cefhost/CefBrowserWindow`     | `cefhost/browser_window.rs` |
 | `cefhost/CefAppBrowser`        | `cefhost/app_browser.rs` |
 | `cefhost/CefSiteBrowser`       | `cefhost/site_browser.rs` |
-| `cefhost/SpSchemeHandler`      | `cefhost/sp_scheme_server.rs` |
+| `cefhost/SpSchemeHandler`      | `cefhost/sp_scheme_handler.rs` |
 
 ### How the C++ idioms are mapped
 
@@ -149,29 +149,25 @@ Platform and toolkit:
 - **Startup** happens in the first frame, because egui has no fonts before
   then and the Space lays out text as it starts.
 
-Embedded browsers (offscreen CEF through the `cef` crate). The `cef` crate
-exposes the whole CEF API, but the port keeps the design of the earlier Wef
-backend for now; the first four points could move back to the C++ approach:
+Embedded browsers (offscreen CEF through the `cef` crate):
 
-- **No `sp://` scheme.** Bundles are served by a loopback HTTP server at
-  `http://<bundle>.localhost:<port>/`, one origin per bundle, and the shared
-  API bundle at `http://import.localhost:<port>/` (readable from any origin, as
-  before). `Apps/import/scripts/sp.js` recognises this hosting mode and maps
-  `sp://<bundle>/x` to it.
-- **No per-app CEF profiles.** All browsers share CEF's global profile; the
-  separate origins still keep each app's storage apart.
+- **`sp://` scheme.** As in the C++ client, bundles are served at
+  `sp://<bundle>/` (a standard, secure scheme registered in every process),
+  and the shared API bundle at `sp://import/`, readable from any origin.
+  One scheme handler factory serves every browser.
+- **Navigation is checked before it happens** (`OnBeforeBrowse`). A page
+  that would leave its app bundle, or a site that would move to a host that
+  has not been allowed, never loads; the host view gets the same callback as
+  before. Redirects of a page the host loaded are allowed, as before.
+  `bungalow:` links are caught by a click handler in the page.
+- **No per-app CEF profiles.** All browsers share CEF's global profile; each
+  bundle's own `sp://` origin still keeps its storage apart.
 - **No request filter.** Instead of `OnBeforeResourceLoad`, app pages get a
   Content-Security-Policy that allows the same sources (the bundle, the shared
   API bundle, `data:`, `blob:`, and the allowed https/wss hosts with their
-  subdomains).
-- **Navigation is checked after the fact.** Instead of `OnBeforeBrowse`, a
-  page that leaves its app bundle, or a site that moves to a host that has not
-  been allowed, is noticed when the address changes; the browser goes back
-  and the host view gets the same callback as before. Redirects of a page the
-  host loaded are allowed, as CEF did. `bungalow:` links are caught by a click
-  handler in the page.
-- **Startup scripts** are injected into app pages by the server (before the
-  page's own scripts) and into site pages when loading starts.
+  subdomains). Frames inside a page are left to it as well.
+- **Startup scripts** are injected into app pages by the scheme handler
+  (before the page's own scripts) and into site pages when loading starts.
 - **`window.jsBridge.navigate(uri)`** is a V8 function the renderer process
   installs in every script context; it sends a process message to the browser
   process (the C++ `NavigateHandler`).
